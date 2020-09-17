@@ -1,0 +1,62 @@
+{
+    "xsappname": "<%= projectName %>",
+    "tenant-mode": "shared",
+    "scopes": [
+        {
+            "name": "$XSAPPNAME.Callback",
+            "description": "With this scope set, the callbacks for tenant onboarding, offboarding and getDependencies can be called.",
+            "grant-as-authority-to-apps": [
+                "$XSAPPNAME(application,sap-provisioning,tenant-onboarding)"
+            ]
+        },
+        {
+            "name": "$XSAPPNAME.Administrator",
+            "description": "Administrate the application"
+        },
+        {
+            "name": "$XSAPPNAME.User",
+            "description": "Use the application"
+        }
+    ],
+    "role-templates": [
+        {
+            "name": "Administrator",
+            "description": "Administrator",
+            "scope-references": [
+                "$XSAPPNAME.Administrator"
+            ]
+        },
+        {
+            "name": "User",
+            "description": "User",
+            "scope-references": [
+                "$XSAPPNAME.User"
+            ]
+        }
+    ],
+    "role-collections": [
+        {
+            "name": "<%= projectName %>_Administrator",
+            "description": "<%= displayName %> Administrator",
+            "role-template-references": [
+                "$XSAPPNAME.Administrator",
+                "$XSAPPNAME.User"
+            ]
+        },
+        {
+            "name": "<%= projectName %>_User",
+            "description": "<%= displayName %> User",
+            "role-template-references": [
+                "$XSAPPNAME.User"
+            ]
+        }
+    ]
+<% if(customDomain){ -%>
+    ,
+    "oauth2-configuration": {
+        "redirect-uris": [
+            "http*://*.<%= customDomain %>/**"
+        ]
+    }
+<% } -%>
+}

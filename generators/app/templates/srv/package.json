@@ -1,0 +1,20 @@
+{
+    "dependencies": {
+        "express": "latest",
+        "cfenv": "latest",
+        "body-parser": "latest",
+        <% if(SaaSAPI || HANA || routes || destination){ -%>
+        "axios": "latest",
+        "qs": "latest",
+        <% } %>
+        "@sap/xsenv": "latest",
+        <% if(HANA){ %>
+        "@sap/hdbext": "latest",
+        <% } %>
+        "@sap/xssec": "^2",
+        "passport": "latest"
+    },
+    "scripts": {
+        "start": "node server.js"
+    }
+}

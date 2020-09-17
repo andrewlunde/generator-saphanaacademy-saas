@@ -1,0 +1,144 @@
+ID: <%= projectName %>
+_schema-version: "3.1"
+version: 0.0.1
+
+modules:
+<% if(HANA){ -%>
+  - name: <%= projectName %>-db
+    type: com.sap.xs.hdi-dynamic
+    path: db
+    parameters:
+      memory: 256M
+      disk-quota: 512M
+<% if(customDomain !== ""){ -%>
+      host: <%= projectName %>-db
+      domain: <%= customDomain %>
+<% } -%>
+    properties:
+      hdi_dynamic_deploy_user: ${generated-user}
+      hdi_dynamic_deploy_password: ${generated-password}
+    provides:
+      - name: db_api
+        properties:
+          url: ${default-url}
+          user: ${generated-user}
+          password: ${generated-password}
+<% } -%>
+
+  - name: <%= projectName %>-srv
+    type: nodejs
+    path: srv
+    parameters:
+      memory: 256M
+      disk-quota: 512M
+<% if(customDomain !== ""){ -%>
+      host: <%= projectName %>-srv
+      domain: <%= customDomain %>
+<% } -%>
+    provides:
+      - name: srv_api
+        properties:
+          url: ${default-url}
+    properties:
+      SAP_JWT_TRUST_ACL:
+        - clientid: "*"
+          identityzone: "sap-provisioning"
+    requires:
+      - name: <%= projectName %>-uaa
+      - name: <%= projectName %>-registry
+<% if(HANA){ -%>
+      - name: <%= projectName %>-sm
+      - name: db_api
+        properties:
+          db_api_url: ~{url}
+          db_api_user: ~{user}
+          db_api_password: ~{password}
+<% } -%>
+<% if(destination){ -%>
+      - name: <%= projectName %>-dest
+<% } -%>
+
+  - name: <%= projectName %>
+    type: html5
+    path: app
+    parameters:
+      memory: 256M
+      disk-quota: 512M
+<% if(customDomain !== ""){ -%>
+      host: <%= projectName %>
+      domain: <%= customDomain %>
+<% } -%>
+    provides:
+      - name: app_api
+        properties:
+          url: ${default-url}
+          application: ${app-name}
+    properties:
+<% if(customDomain !== ""){ -%>
+      TENANT_HOST_PATTERN: '^(.*).<%= customDomain %>'
+<% } else { -%>
+      TENANT_HOST_PATTERN: '^(.*)-${space}-${app-name}.${default-domain}'
+<% } -%>
+    requires:
+      - name: <%= projectName %>-uaa
+      - name: srv_api
+        group: destinations
+        properties:
+          name: srv
+          url: ~{url}
+          forwardAuthToken: true
+
+resources:
+  - name: <%= projectName %>-uaa
+    type: org.cloudfoundry.managed-service
+    requires: 
+      - name: app_api
+    properties:
+      XSAPPNAME: ${xsuaa-app}
+    parameters:
+      path: ./xs-security.json
+      service: xsuaa
+      service-plan: application
+      xsuaa-app: ${space}-~{app_api/application}
+      config:
+        xsappname: ${xsuaa-app}
+<% if(HANA){ -%>
+  - name: <%= projectName %>-sm
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: service-manager
+      service-plan: container
+<% } -%>
+  - name: <%= projectName %>-registry
+    type: org.cloudfoundry.managed-service
+    requires:
+      - name: <%= projectName %>-uaa
+    parameters:
+      service: saas-registry
+      service-plan: application
+      service-name: <%= projectName %>-registry
+      config:
+        xsappname: ~{<%= projectName %>-uaa/XSAPPNAME}
+        appName: <%= projectName %>
+        displayName: '<%= displayName %>'
+        description: '<%= description %>'
+        category: '<%= category %>'
+        appUrls:
+<% if(customDomain !== ""){ -%>
+          onSubscription: https://<%= projectName %>-srv.<%= customDomain %>/callback/v1.0/tenants/{tenantId}
+<% if(destination){ -%>
+          getDependencies: https://<%= projectName %>-srv.<%= customDomain %>/callback/v1.0/dependencies
+<% } -%>
+<% } else { -%>
+          onSubscription: https://${org}-${space}-<%= projectName %>-srv.${default-domain}/callback/v1.0/tenants/{tenantId}
+<% if(destination){ -%>
+          getDependencies: https://${org}-${space}-<%= projectName %>-srv.${default-domain}/callback/v1.0/dependencies
+<% } -%>
+<% } -%>
+<% if(destination){ -%>
+  - name: <%= projectName %>-dest
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+<% } -%>
