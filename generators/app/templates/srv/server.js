@@ -204,7 +204,7 @@ app.get('/srv/database', function (req, res) {
 <% if(destination){ -%>
 // destination reuse service
 app.get('/srv/destinations', function (req, res) {
-    if (req.authInfo.checkScope('$XSAPPNAME.Administrator')) {
+    if (req.authInfo.checkScope('$XSAPPNAME.User')) {
         lib.getDestination(services.dest, req.authInfo.subdomain, req.query.destination).then(
             function (result) {
                 // result contains the destination information for use in REST calls
