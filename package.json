@@ -1,6 +1,6 @@
 {
   "name": "generator-saphanaacademy-saas",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Yeoman Generator for SAP Cloud Platform Multitenant SaaS Apps",
   "homepage": "https://www.youtube.com/saphanaacademy",
   "author": {
