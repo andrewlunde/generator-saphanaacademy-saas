@@ -1,23 +1,23 @@
 module.exports = {
-    <% if(SaaSAPI){ -%>
-    getSubscriptions: getSubscriptions
-        <% if(routes || HANA || destination){ -%>,<% } -%>
-    <% } -%>
-    <% if(routes){ -%>
+<% if(SaaSAPI){ -%>
+    getSubscriptions: getSubscriptions<% if(routes || HANA || destination){ -%>,<% } -%>
+<% } -%>
+<% if(routes){ -%>
+
     createRoute: createRoute,
-    deleteRoute: deleteRoute
-        <% if(HANA || destination){ -%>,<% } -%>
-    <% } -%>
-    <% if(HANA){ -%>
+    deleteRoute: deleteRoute<% if(HANA || destination){ -%>,<% } -%>
+<% } -%>
+<% if(HANA){ -%>
+
     createSMInstance: createSMInstance,
     getSMInstance: getSMInstance,
-    deleteSMInstance: deleteSMInstance
-    <% if(destination){ -%>,<% } -%>
-    <% } -%>
-    <% if(destination){ -%>
+    deleteSMInstance: deleteSMInstance<% if(destination){ -%>,<% } -%>
+<% } -%>
+<% if(destination){ -%>
+
     getDestination: getDestination
-    <% } -%>
-    };
+<% } -%>
+};
 
 const cfenv = require('cfenv');
 const appEnv = cfenv.getAppEnv();

@@ -5,15 +5,16 @@ const bodyParser = require('body-parser');
 const cfenv = require('cfenv');
 const appEnv = cfenv.getAppEnv();
 const xsenv = require('@sap/xsenv');
+//xsenv.loadEnv();
 const services = xsenv.getServices({
     uaa: { tag: 'xsuaa' },
     registry: { tag: 'SaaS' }
-    <% if(HANA){ -%>
-        , sm: { label: 'service-manager' }
-    <% } -%>
-    <% if(destination){ -%>
-        , dest: { tag: 'destination' }
-    <% } -%>
+<% if(HANA){ -%>
+    , sm: { label: 'service-manager' }
+<% } -%>
+<% if(destination){ -%>
+    , dest: { tag: 'destination' }
+<% } -%>
 });
 
 const xssec = require('@sap/xssec');
@@ -27,27 +28,27 @@ app.use(passport.authenticate('JWT', {
 app.use(bodyParser.json());
 
 <% if(SaaSAPI || HANA || routes || destination){ -%>
-    const lib = require('./library');
+const lib = require('./library');
 <% } -%>
 
 <% if(HANA){ -%>
-    const hdbext = require('@sap/hdbext');
+const hdbext = require('@sap/hdbext');
 <% } -%>
 
 // subscribe/onboard a subscriber tenant
 app.put('/callback/v1.0/tenants/*', function (req, res) {
-    <% if(customDomain !== ""){ -%>
+<% if(customDomain !== ""){ -%>
     let tenantHost = req.body.subscribedSubdomain;
-    <% } else { -%>
+<% } else { -%>
     let tenantHost = req.body.subscribedSubdomain + '-' + appEnv.app.space_name.toLowerCase().replace(/_/g, '-') + '-' + services.registry.appName.toLowerCase().replace(/_/g, '-');
-    <% } -%>
+<% } -%>
     let tenantURL = 'https:\/\/' + tenantHost + /\.(.*)/gm.exec(appEnv.app.application_uris[0])[0];
     console.log('Subscribe: ', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantHost, tenantURL);
-    <% if(routes){ -%>
+<% if(routes){ -%>
     lib.createRoute(tenantHost, services.registry.appName).then(
         function (result) {
-    <% } -%>
-            <% if(HANA){ -%>
+<% } -%>
+<% if(HANA){ -%>
             lib.createSMInstance(services.sm, services.registry.appName + '-' + req.body.subscribedTenantId).then(
                 async function (result) {
                     res.status(200).send(tenantURL);
@@ -56,34 +57,34 @@ app.put('/callback/v1.0/tenants/*', function (req, res) {
                     console.log(err.stack);
                     res.status(500).send(err.message);
                 });
-            <% } else if(routes) { -%>
+<% } else if(routes) { -%>
             res.status(200).send(tenantURL);
-            <% } -%>
-    <% if(routes){ -%>
+<% } -%>
+<% if(routes){ -%>
         },
         function (err) {
             console.log(err.stack);
             res.status(500).send(err.message);
         });
-    <% } -%>
-    <% if(!routes && !HANA){ -%>
+<% } -%>
+<% if(!routes && !HANA){ -%>
     res.status(200).send(tenantURL);
-    <% } -%>
+<% } -%>
 });
 
 // unsubscribe/offboard a subscriber tenant
 app.delete('/callback/v1.0/tenants/*', function (req, res) {
-    <% if(customDomain !== ""){ -%>
+<% if(customDomain !== ""){ -%>
     let tenantHost = req.body.subscribedSubdomain;
-    <% } else { -%>
+<% } else { -%>
     let tenantHost = req.body.subscribedSubdomain + '-' + appEnv.app.space_name.toLowerCase().replace(/_/g, '-') + '-' + services.registry.appName.toLowerCase().replace(/_/g, '-');
-    <% } -%>
+<% } -%>
     console.log('Unsubscribe: ', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantHost);
-    <% if(routes){ -%>
+<% if(routes){ -%>
     lib.deleteRoute(tenantHost, services.registry.appName).then(
         function (result) {
-    <% } -%>
-            <% if(HANA){ -%>
+<% } -%>
+<% if(HANA){ -%>
             lib.deleteSMInstance(services.sm, services.registry.appName + '-' + req.body.subscribedTenantId).then(
                 function (result) {
                     res.status(200).send('');
@@ -92,19 +93,19 @@ app.delete('/callback/v1.0/tenants/*', function (req, res) {
                     console.log(err.stack);
                     res.status(500).send(err.message);
                 });
-            <% } else if(routes) { -%>
+<% } else if(routes) { -%>
             res.status(200).send('');
-            <% } -%>
-    <% if(routes){ -%>
+<% } -%>
+<% if(routes){ -%>
         },
         function (err) {
             console.log(err.stack);
             res.status(500).send(err.message);
         });
-    <% } -%>
-    <% if(!routes && !HANA){ -%>
+<% } -%>
+<% if(!routes && !HANA){ -%>
     res.status(200).send('');
-    <% } -%>
+<% } -%>
 });
 
 <% if(destination){ -%>
@@ -123,9 +124,9 @@ app.get('/callback/v1.0/dependencies', function (req, res) {
 app.get('/srv/info', function (req, res) {
     if (req.authInfo.checkScope('$XSAPPNAME.User')) {
         let info = {
-            'userInfo': req.authInfo.userInfo,
-            'subdomain': req.authInfo.subdomain,
-            'tenantId': req.authInfo.identityZone
+            'userInfo': req.user,
+            'subdomain': req.authInfo.getSubdomain(),
+            'tenantId': req.authInfo.getZoneId()
         };
         res.status(200).json(info);
     } else {
@@ -156,7 +157,7 @@ app.get('/srv/subscriptions', function (req, res) {
 app.get('/srv/database', function (req, res) {
     if (req.authInfo.checkScope('$XSAPPNAME.User')) {
         // get DB instance
-        lib.getSMInstance(services.sm, services.registry.appName + '-' + req.authInfo.identityZone).then(
+        lib.getSMInstance(services.sm, services.registry.appName + '-' + req.authInfo.getZoneId()).then(
             function (serviceBinding) {
                 if (!serviceBinding.hasOwnProperty('error')) {
                     // connect to DB instance
@@ -168,7 +169,7 @@ app.get('/srv/database', function (req, res) {
                             return;
                         }
                         // insert
-                        let sqlstmt = `INSERT INTO "<%= projectName %>.db::tenantInfo" ("tenant", "timeStamp") VALUES('` + services.registry.appName + `-` + req.authInfo.subdomain + `-` + req.authInfo.identityZone + `', CURRENT_TIMESTAMP)`;
+                        let sqlstmt = `INSERT INTO "<%= projectName %>.db::tenantInfo" ("tenant", "timeStamp") VALUES('` + services.registry.appName + `-` + req.authInfo.getSubdomain() + `-` + req.authInfo.getZoneId() + `', CURRENT_TIMESTAMP)`;
                         db.exec(sqlstmt, function (err, results) {
                             if (err) {
                                 console.log(err.message);
@@ -205,7 +206,7 @@ app.get('/srv/database', function (req, res) {
 // destination reuse service
 app.get('/srv/destinations', function (req, res) {
     if (req.authInfo.checkScope('$XSAPPNAME.User')) {
-        lib.getDestination(services.dest, req.authInfo.subdomain, req.query.destination).then(
+        lib.getDestination(services.dest, req.authInfo.getSubdomain(), req.query.destination).then(
             function (result) {
                 // result contains the destination information for use in REST calls
                 res.status(200).json(result);

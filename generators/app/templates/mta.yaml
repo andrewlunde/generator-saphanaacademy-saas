@@ -39,10 +39,6 @@ modules:
       - name: srv_api
         properties:
           url: ${default-url}
-    properties:
-      SAP_JWT_TRUST_ACL:
-        - clientid: "*"
-          identityzone: "sap-provisioning"
     requires:
       - name: <%= projectName %>-uaa
       - name: <%= projectName %>-registry

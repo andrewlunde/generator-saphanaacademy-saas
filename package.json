@@ -1,33 +1,48 @@
 {
   "name": "generator-saphanaacademy-saas",
-  "version": "0.0.2",
-  "description": "Yeoman Generator for SAP Cloud Platform Multitenant SaaS Apps",
-  "homepage": "https://www.youtube.com/saphanaacademy",
+  "displayName": "SAP HANA Academy SaaS",
+  "description": "Yeoman Generator to jump-start BTP Multitenant SaaS Apps",
+  "version": "0.0.3",
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://www.youtube.com/playlist?list=PLkzo92owKnVx3Sh0nemX8GoSNzJGfsWJM",
   "author": {
     "name": "SAP HANA Academy",
     "email": "hanaacademy@sap.com",
-    "url": "https://www.youtube.com/saphanaacademy"
+    "url": "https://www.youtube.com/playlist?list=PLkzo92owKnVx3Sh0nemX8GoSNzJGfsWJM"
   },
   "files": [
-    "generators"
+    "generators",
+    "yeoman.png"
   ],
   "main": "generators/index.js",
   "keywords": [
+    "mta",
+    "multitarget",
     "multitenant",
     "multi-tenant",
+    "uaa",
+    "security",
+    "authentication",
+    "authorization",
     "saas",
     "saphanaacademy",
     "hanaacademy",
     "dpe",
     "digitalpartnerengineering",
+    "partner",
+    "innovation",
+    "lab",
     "yeoman-generator"
   ],
   "devDependencies": {
     "eslint": "^6.6.0",
+    "eslint-config-prettier": "^6.6.0",
     "eslint-config-xo": "^0.29.1",
+    "eslint-plugin-prettier": "^3.1.4",
     "husky": "^4.2.5",
     "jest": "^25.4.0",
     "lint-staged": "^10.2.11",
+    "prettier": "^2.0.5",
     "yeoman-assert": "^3.1.0",
     "yeoman-test": "^2.4.1"
   },
@@ -44,17 +59,15 @@
   },
   "lint-staged": {
     "*.js": [
-      "eslint --fix",
-      "git add"
+      "eslint --fix"
     ],
     "*.json": [
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ]
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": ""
     }
   },
   "eslintConfig": {
@@ -77,6 +90,5 @@
     "pretest": "eslint .",
     "test": "jest"
   },
-  "repository": "saphanaacademy/generator-saphanaacademy-saas",
-  "license": "Apache-2.0"
+  "repository": "saphanaacademy/generator-saphanaacademy-saas"
 }

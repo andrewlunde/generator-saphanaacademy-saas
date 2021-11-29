@@ -16,6 +16,10 @@ Then generate your new project:
 yo saphanaacademy-saas
 ```
 
+## Video Tutorials
+
+For hands-on video tutorials click [here](https://www.youtube.com/playlist?list=PLkzo92owKnVx3Sh0nemX8GoSNzJGfsWJM).
+
 ## Getting To Know Yeoman
 
  * Yeoman has a heart of gold.
@@ -25,7 +29,7 @@ yo saphanaacademy-saas
 
 ## License
 
-Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved. This project is licensed under the Apache Software License, Version 2.0 except as noted otherwise in the [LICENSE](LICENSE) file.
+Copyright (c) 2021 SAP SE or an SAP affiliate company. All rights reserved. This project is licensed under the Apache Software License, Version 2.0 except as noted otherwise in the [LICENSE](LICENSE) file.
 
 [npm-image]: https://badge.fury.io/js/generator-saphanaacademy-saas.svg
 [npm-url]: https://npmjs.org/package/generator-saphanaacademy-saas

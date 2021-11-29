@@ -1,8 +1,9 @@
 {
     "dependencies": {
-        "@sap/approuter": "^6"
+        "@sap/approuter": "latest"
     },
     "scripts": {
+        "custom": "node custom.js",
         "start": "node node_modules/@sap/approuter/approuter.js"
     }
 }
