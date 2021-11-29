@@ -1,5 +1,5 @@
 # generator-saphanaacademy-saas [![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url] [![Dependency Status][daviddm-image]][daviddm-url]
-> Yeoman Generator for SAP Cloud Platform Multitenant SaaS Apps
+> Yeoman Generator to jump-start BTP Multitenant SaaS Apps
 
 ## Installation
 
