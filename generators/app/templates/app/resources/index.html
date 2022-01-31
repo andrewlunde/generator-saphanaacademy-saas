@@ -9,15 +9,15 @@
 <body>
     <h2><%= description %></h2>
     <a href="/srv/info">Info</a><br>
-    <% if(SaaSAPI){ -%>
+<% if(SaaSAPI){ -%>
     <a href="/srv/subscriptions">Subscriptions</a><br>
-    <% } -%>
-    <% if(HANA){ -%>
+<% } -%>
+<% if(HANA){ -%>
     <a href="/srv/database">Database</a><br>
-    <% } -%>
-    <% if(destination){ -%>
-    <a href="/srv/destinations?destination=mydest">Destinations</a><br>
-    <% } -%>
+<% } -%>
+<% if(destination){ -%>
+    <a href="/srv/destinations?destination=<%= projectName %>-dest">Destinations</a><br>
+<% } -%>
 </body>
 
 </html>

@@ -2,6 +2,9 @@ ID: <%= projectName %>
 _schema-version: "3.1"
 version: 0.0.1
 
+parameters:
+  enable-parallel-deployments: true
+
 modules:
 <% if(HANA){ -%>
   - name: <%= projectName %>-db
@@ -50,7 +53,7 @@ modules:
           db_api_user: ~{user}
           db_api_password: ~{password}
 <% } -%>
-<% if(destination){ -%>
+<% if(destination || routes){ -%>
       - name: <%= projectName %>-dest
 <% } -%>
 
@@ -64,6 +67,7 @@ modules:
       host: <%= projectName %>
       domain: <%= customDomain %>
 <% } -%>
+      keep-existing-routes: true
     provides:
       - name: app_api
         properties:
@@ -131,10 +135,36 @@ resources:
           getDependencies: https://${org}-${space}-<%= projectName %>-srv.${default-domain}/callback/v1.0/dependencies
 <% } -%>
 <% } -%>
-<% if(destination){ -%>
+<% if(routes || destination){ -%>
   - name: <%= projectName %>-dest
     type: org.cloudfoundry.managed-service
     parameters:
       service: destination
       service-plan: lite
+      config:
+        init_data:
+          instance:
+            existing_destinations_policy: ignore
+            destinations:
+<% if(routes){ -%>
+              - Name: <%= projectName %>-cfapi
+                Description: CF Cloud Controller API
+                URL: ${controller-url}
+                Type: HTTP
+                ProxyType: Internet
+                Authentication: OAuth2Password
+                tokenServiceURL: ${authorization-url}/oauth/token
+                clientId: cf
+                clientSecret:
+                User: <SetValueInCockpit>
+                Password: <SetValueInCockpit>
+<% } -%>
+<% if(destination){ -%>
+              - Name: <%= projectName %>-dest
+                Description: Application Destination
+                URL: https://services.odata.org/Northwind/Northwind.svc
+                Type: HTTP
+                ProxyType: Internet
+                Authentication: NoAuthentication
+<% } -%>
 <% } -%>

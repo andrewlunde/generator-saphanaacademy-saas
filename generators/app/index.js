@@ -40,7 +40,7 @@ module.exports = class extends Generator {
         type: "input",
         name: "category",
         message: "What is the category of your app?",
-        default: "Digital Partner Engineering",
+        default: "SaaS Multitenant Apps"
       },
       {
         type: "confirm",
@@ -81,6 +81,12 @@ module.exports = class extends Generator {
         message: "Would you like to include an example of using the destination reuse service?",
         default: false,
       },
+      {
+        type: "confirm",
+        name: "buildDeploy",
+        message: "Would you like to build and deploy the project immediately?",
+        default: false
+      },
     ]).then((answers) => {
       if (answers.newDir) {
         this.destinationRoot(`${answers.projectName}`);
@@ -111,12 +117,22 @@ module.exports = class extends Generator {
   }
 
   install() {
-    /*
-    This.installDependencies({
-      bower: false,
-      npm: true
-    });
-    */
+    var answers = this.config;
+    // build and deploy if requested
+    var mta = "mta_archives/" + answers.get("projectName") + "_0.0.1.mtar";
+    if (answers.get("buildDeploy")) {
+      let opt = { "cwd": this.destinationPath() };
+      let resBuild = this.spawnCommandSync("mbt", ["build"], opt);
+      if (resBuild.status === 0) {
+        this.spawnCommandSync("cf", ["deploy", mta], opt);
+      }
+    } else {
+      this.log("");
+      this.log("You can build and deploy your project from the command line as follows:");
+      this.log(" cd " + answers.get("projectName"));
+      this.log(" mbt build");
+      this.log(" cf deploy " + mta);
+    }
   }
 
   end() {
@@ -126,11 +142,7 @@ module.exports = class extends Generator {
       this.log("  cf map-route " + this.config.get('projectName') + " " + this.config.get('customDomain') + ' --hostname "*"');
     }
     if (this.config.get('routes')) {
-      let projectName = this.config.get('projectName');
-      this.log("Important: The CF API is being used so please be sure to issue the following CF CLI commands after deployment:");
-      this.log("  cf set-env " + projectName + "-srv cf_api_user '<email>'");
-      this.log("  cf set-env " + projectName + "-srv cf_api_password '<password>'");
-      this.log("  cf restage " + projectName + "-srv");
+      this.log("Important: The CF API is being used so please be sure to update the destination " + this.config.get('projectName') + "-cfapi - Token Service URL (replace login with uaa) and set User & Password. Client Secret needs to be empty.");
     }
     if (this.config.get('destination')) {
       this.log("Don't forget to configure the destination for each subscriber.");

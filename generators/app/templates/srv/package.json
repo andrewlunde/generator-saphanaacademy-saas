@@ -3,14 +3,17 @@
         "express": "latest",
         "cfenv": "latest",
         "body-parser": "latest",
-<% if(SaaSAPI || HANA || routes || destination){ -%>
+<% if(SaaSAPI || HANA){ -%>
         "axios": "latest",
         "qs": "latest",
 <% } %>
-        "@sap/xsenv": "latest",
 <% if(HANA){ %>
         "@sap/hdbext": "latest",
 <% } %>
+<% if(routes || destination){ %>
+        "@sap-cloud-sdk/core": "latest",
+<% } %>
+        "@sap/xsenv": "latest",
         "@sap/xssec": "latest",
         "passport": "latest"
     },

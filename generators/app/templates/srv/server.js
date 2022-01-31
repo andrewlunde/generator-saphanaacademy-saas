@@ -17,6 +17,10 @@ const services = xsenv.getServices({
 <% } -%>
 });
 
+<% if (destination) {-%>
+const CloudSDKCore = require('@sap-cloud-sdk/core');
+<% } -%>
+
 const xssec = require('@sap/xssec');
 const passport = require('passport');
 passport.use('JWT', new xssec.JWTStrategy(services.uaa));
@@ -27,7 +31,7 @@ app.use(passport.authenticate('JWT', {
 
 app.use(bodyParser.json());
 
-<% if(SaaSAPI || HANA || routes || destination){ -%>
+<% if(SaaSAPI || HANA || routes){ -%>
 const lib = require('./library');
 <% } -%>
 
@@ -204,17 +208,24 @@ app.get('/srv/database', function (req, res) {
 
 <% if(destination){ -%>
 // destination reuse service
-app.get('/srv/destinations', function (req, res) {
+app.get('/srv/destinations', async function (req, res) {
     if (req.authInfo.checkScope('$XSAPPNAME.User')) {
-        lib.getDestination(services.dest, req.authInfo.getSubdomain(), req.query.destination).then(
-            function (result) {
-                // result contains the destination information for use in REST calls
-                res.status(200).json(result);
-            },
-            function (err) {
-                console.log(err.stack);
-                res.status(500).send(err.message);
-            });
+        try {
+            let res1 = await CloudSDKCore.executeHttpRequest(
+                {
+                    destinationName: req.query.destination,
+                    jwt: req.headers.authorization.split(" ")[1]
+                },
+                {
+                    method: 'GET',
+                    url: req.query.path || '/'
+                }
+            );
+            res.status(200).json(res1.data);
+        } catch (err) {
+            console.log(err.stack);
+            res.status(500).send(err.message);
+        }
     } else {
         res.status(403).send('Forbidden');
     }

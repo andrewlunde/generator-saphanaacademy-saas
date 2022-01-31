@@ -29,7 +29,7 @@ For hands-on video tutorials click [here](https://www.youtube.com/playlist?list=
 
 ## License
 
-Copyright (c) 2021 SAP SE or an SAP affiliate company. All rights reserved. This project is licensed under the Apache Software License, Version 2.0 except as noted otherwise in the [LICENSE](LICENSE) file.
+Copyright (c) 2022 SAP SE or an SAP affiliate company. All rights reserved. This project is licensed under the Apache Software License, Version 2.0 except as noted otherwise in the [LICENSE](LICENSE) file.
 
 [npm-image]: https://badge.fury.io/js/generator-saphanaacademy-saas.svg
 [npm-url]: https://npmjs.org/package/generator-saphanaacademy-saas
