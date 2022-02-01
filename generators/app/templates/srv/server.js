@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const cfenv = require('cfenv');
 const appEnv = cfenv.getAppEnv();
 const xsenv = require('@sap/xsenv');
-//xsenv.loadEnv();
+xsenv.loadEnv();
 const services = xsenv.getServices({
     uaa: { tag: 'xsuaa' },
     registry: { tag: 'SaaS' }
@@ -18,7 +18,8 @@ const services = xsenv.getServices({
 });
 
 <% if (destination) {-%>
-const CloudSDKCore = require('@sap-cloud-sdk/core');
+const core = require('@sap-cloud-sdk/core');
+const { retrieveJwt } = require('@sap-cloud-sdk/core');
 <% } -%>
 
 const xssec = require('@sap/xssec');
@@ -211,10 +212,10 @@ app.get('/srv/database', function (req, res) {
 app.get('/srv/destinations', async function (req, res) {
     if (req.authInfo.checkScope('$XSAPPNAME.User')) {
         try {
-            let res1 = await CloudSDKCore.executeHttpRequest(
+            let res1 = await core.executeHttpRequest(
                 {
                     destinationName: req.query.destination,
-                    jwt: req.headers.authorization.split(" ")[1]
+                    jwt: retrieveJwt(req)
                 },
                 {
                     method: 'GET',

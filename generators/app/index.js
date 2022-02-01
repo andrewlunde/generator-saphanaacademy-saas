@@ -16,7 +16,7 @@ module.exports = class extends Generator {
           }
           return "Please only use alphanumeric characters for the project name.";
         },
-        default: "myappsaas",
+        default: "app",
       },
       {
         type: "confirm",
@@ -57,7 +57,7 @@ module.exports = class extends Generator {
       {
         type: "input",
         name: "customDomain",
-        message: "Will you be using a wildcard custom domain (eg: myappsaas.acme.com)? If so please enter it here - or simply press enter for none.",
+        message: "Will you be using a wildcard custom domain (eg: app.domain.com)? If so please enter it here - or simply press enter for none.",
         validate: (s) => {
           if (s === "") {
             return true;
