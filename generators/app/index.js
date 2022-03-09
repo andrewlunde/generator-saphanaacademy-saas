@@ -105,10 +105,12 @@ module.exports = class extends Generator {
       })
       .forEach((file) => {
         if (!(file.includes('/.DS_Store'))) {
-          if (!(this.config.get('HANA') === false && file.substr(0,3) === 'db/')) {
+          if (!(this.config.get('HANA') === false && file.substring(0,3) === 'db/')) {
             if (!(file === 'srv/library.js' && this.config.get('SaaSAPI') === false && this.config.get('HANA') === false && this.config.get('routes') === false && this.config.get('destination') === false)) {
               const sOrigin = this.templatePath(file);
-              const sTarget = this.destinationPath(file);
+              let fileDest = file;
+              fileDest = fileDest.replace('dotgitignore', '.gitignore');
+              const sTarget = this.destinationPath(fileDest);
               this.fs.copyTpl(sOrigin, sTarget, this.config.getAll());
             }
           }
