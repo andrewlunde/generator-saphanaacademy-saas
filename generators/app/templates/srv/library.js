@@ -27,6 +27,10 @@ const axios = require('axios');
 const qs = require('qs');
 <% } -%>
 
+<% if(HANA){ -%>
+const crypto = require('crypto');
+<% } -%>
+
 <% if (SaaSAPI) {-%>
 async function getSubscriptions(registry) {
     try {
@@ -174,7 +178,7 @@ async function deleteRoute(tenantHost, appname) {
 <% } -%>
 
 <% if (HANA) {-%>
-async function createSMInstance(sm, tenantId) {
+async function getSMInfo(sm, appName, tenantId) {
     try {
         // get access token
         let options = {
@@ -207,66 +211,13 @@ async function createSMInstance(sm, tenantId) {
                     };
                     let res2 = await axios(options2);
                     if (res2.data.num_items === 1) {
-                        try {
-                            // create service instance
-                            let options3 = {
-                                method: 'POST',
-                                url: sm.sm_url + '/v1/service_instances?async=false',
-                                data: {
-                                    'name': tenantId,
-                                    'service_plan_id': res2.data.items[0].id
-                                },
-                                headers: {
-                                    'Authorization': 'Bearer ' + res.data.access_token
-                                }
-                            };
-                            let res3 = await axios(options3);
-                            try {
-                                // create service binding
-                                let options4 = {
-                                    method: 'POST',
-                                    url: sm.sm_url + '/v1/service_bindings?async=false',
-                                    data: {
-                                        'name': tenantId,
-                                        'service_instance_id': res3.data.id
-                                    },
-                                    headers: {
-                                        'Authorization': 'Bearer ' + res.data.access_token
-                                    }
-                                };
-                                let res4 = await axios(options4);
-                                if (res4.data.hasOwnProperty('id') && res4.data.hasOwnProperty('credentials')) {
-                                    let payload = { 'id': res4.data.id, 'credentials': res4.data.credentials, 'status': 'CREATION_SUCCEEDED' };
-                                    try {
-                                        // deploy DB artefacts
-                                        let options5 = {
-                                            method: 'POST',
-                                            data: payload,
-                                            url: process.env.db_api_url + '/v1/deploy/to/instance',
-                                            headers: {
-                                                'Authorization': 'Basic ' + Buffer.from(process.env.db_api_user + ':' + process.env.db_api_password).toString('base64'),
-                                                'Content-Type': 'application/json'
-                                            }
-                                        };
-                                        let res5 = await axios(options5);
-                                        return res5.data;
-                                    } catch (err) {
-                                        console.log(err.stack);
-                                        return err.message;
-                                    }
-                                } else {
-                                    let errmsg = { 'error': 'Invalid service binding' };
-                                    console.log(errmsg, res4);
-                                    return errmsg;
-                                }
-                            } catch (err) {
-                                console.log(err.stack);
-                                return err.message;
-                            }
-                        } catch (err) {
-                            console.log(err.stack);
-                            return err.message;
-                        }
+                        let results = {
+                            'accessToken': 'Bearer ' + res.data.access_token,
+                            'serviceOfferingId': res1.data.items[0].id,
+                            'servicePlanId': res2.data.items[0].id,
+                            'instanceName': crypto.createHash('sha256').update(appName + '_' + res2.data.items[0].id + '_' + tenantId).digest('base64')
+                        };
+                        return results;
                     } else {
                         let errmsg = { 'error': 'Service plan hdi-shared not found' };
                         console.log(errmsg);
@@ -291,32 +242,58 @@ async function createSMInstance(sm, tenantId) {
     }
 };
 
-async function getSMInstance(sm, tenantId) {
+async function createSMInstance(sm, appName, tenantId) {
     try {
-        // get access token
-        let options = {
+        let smInfo = await getSMInfo(sm, appName, tenantId);
+        // create service instance
+        let options1 = {
             method: 'POST',
-            url: sm.url + '/oauth/token?grant_type=client_credentials&response_type=token',
+            url: sm.sm_url + '/v1/service_instances?async=false',
+            data: {
+                'name': smInfo.instanceName,
+                'service_plan_id': smInfo.servicePlanId
+            },
             headers: {
-                'Authorization': 'Basic ' + Buffer.from(sm.clientid + ':' + sm.clientsecret).toString('base64')
+                'Authorization': smInfo.accessToken
             }
         };
-        let res = await axios(options);
+        let res1 = await axios(options1);
         try {
-            // get service binding details
-            let options1 = {
-                method: 'GET',
-                url: sm.sm_url + "/v1/service_bindings?fieldQuery=name eq '" + tenantId + "'",
+            // create service binding
+            let options2 = {
+                method: 'POST',
+                url: sm.sm_url + '/v1/service_bindings?async=false',
+                data: {
+                    'name': smInfo.instanceName,
+                    'service_instance_id': res1.data.id
+                },
                 headers: {
-                    'Authorization': 'Bearer ' + res.data.access_token
+                    'Authorization': smInfo.accessToken
                 }
             };
-            let res1 = await axios(options1);
-            if (res1.data.num_items === 1) {
-                return res1.data.items[0];
+            let res2 = await axios(options2);
+            if (res2.data.hasOwnProperty('id') && res2.data.hasOwnProperty('credentials')) {
+                let payload = { 'id': res2.data.id, 'credentials': res2.data.credentials, 'status': 'CREATION_SUCCEEDED' };
+                try {
+                    // deploy DB artefacts
+                    let options3 = {
+                        method: 'POST',
+                        data: payload,
+                        url: process.env.db_api_url + '/v1/deploy/to/instance',
+                        headers: {
+                            'Authorization': 'Basic ' + Buffer.from(process.env.db_api_user + ':' + process.env.db_api_password).toString('base64'),
+                            'Content-Type': 'application/json'
+                        }
+                    };
+                    let res3 = await axios(options3);
+                    return res3.data;
+                } catch (err) {
+                    console.log(err.stack);
+                    return err.message;
+                }
             } else {
-                let errmsg = { 'error': 'Service binding not found for tenant ' + tenantId };
-                console.log(errmsg);
+                let errmsg = { 'error': 'Invalid service binding' };
+                console.log(errmsg, res2);
                 return errmsg;
             }
         } catch (err) {
@@ -329,65 +306,77 @@ async function getSMInstance(sm, tenantId) {
     }
 };
 
-async function deleteSMInstance(sm, tenantId) {
+async function getSMInstance(sm, appName, tenantId) {
     try {
-        // get access token
-        let options = {
-            method: 'POST',
-            url: sm.url + '/oauth/token?grant_type=client_credentials&response_type=token',
+        let smInfo = await getSMInfo(sm, appName, tenantId);
+        // get service binding details
+        let options1 = {
+            method: 'GET',
+            url: sm.sm_url + "/v1/service_bindings?fieldQuery=name eq '" + encodeURIComponent(smInfo.instanceName) + "'",
             headers: {
-                'Authorization': 'Basic ' + Buffer.from(sm.clientid + ':' + sm.clientsecret).toString('base64')
+                'Authorization': smInfo.accessToken
             }
         };
-        let res = await axios(options);
-        try {
-            // get service binding and service instance ids
-            let options1 = {
-                method: 'GET',
-                url: sm.sm_url + "/v1/service_bindings?fieldQuery=name eq '" + tenantId + "'",
-                headers: {
-                    'Authorization': 'Bearer ' + res.data.access_token
-                }
-            };
-            let res1 = await axios(options1);
-            if (res1.data.num_items === 1) {
+        let res1 = await axios(options1);
+        if (res1.data.num_items === 1) {
+            return res1.data.items[0];
+        } else {
+            let errmsg = { 'error': 'Service binding not found for tenant ' + tenantId };
+            console.log(errmsg);
+            return errmsg;
+        }
+    } catch (err) {
+        console.log(err.stack);
+        return err.message;
+    }
+};
+
+async function deleteSMInstance(sm, appName, tenantId) {
+    try {
+        let smInfo = await getSMInfo(sm, appName, tenantId);
+        // get service binding and service instance ids
+        let options1 = {
+            method: 'GET',
+            url: sm.sm_url + "/v1/service_bindings?fieldQuery=name eq '" + encodeURIComponent(smInfo.instanceName) + "'",
+            headers: {
+                'Authorization': smInfo.accessToken
+            }
+        };
+        let res1 = await axios(options1);
+        if (res1.data.num_items === 1) {
+            try {
+                // delete service binding
+                let options2 = {
+                    method: 'DELETE',
+                    url: sm.sm_url + '/v1/service_bindings/' + res1.data.items[0].id,
+                    headers: {
+                        'Authorization': smInfo.accessToken
+                    }
+                };
+                let res2 = await axios(options2);
                 try {
-                    // delete service binding
-                    let options2 = {
+                    // delete service instance
+                    let options3 = {
                         method: 'DELETE',
-                        url: sm.sm_url + '/v1/service_bindings/' + res1.data.items[0].id,
+                        url: sm.sm_url + '/v1/service_instances/' + res1.data.items[0].service_instance_id,
                         headers: {
-                            'Authorization': 'Bearer ' + res.data.access_token
+                            'Authorization': smInfo.accessToken
                         }
                     };
-                    let res2 = await axios(options2);
-                    try {
-                        // delete service instance
-                        let options3 = {
-                            method: 'DELETE',
-                            url: sm.sm_url + '/v1/service_instances/' + res1.data.items[0].service_instance_id,
-                            headers: {
-                                'Authorization': 'Bearer ' + res.data.access_token
-                            }
-                        };
-                        let res3 = await axios(options3);
-                        return res3.data;
-                    } catch (err) {
-                        console.log(err.stack);
-                        return err.message;
-                    }
+                    let res3 = await axios(options3);
+                    return res3.data;
                 } catch (err) {
                     console.log(err.stack);
                     return err.message;
                 }
-            } else {
-                let errmsg = { 'error': 'Service binding not found for tenant ' + tenantId };
-                console.log(errmsg);
-                return errmsg;
+            } catch (err) {
+                console.log(err.stack);
+                return err.message;
             }
-        } catch (err) {
-            console.log(err.stack);
-            return err.message;
+        } else {
+            let errmsg = { 'error': 'Service binding not found for tenant ' + tenantId };
+            console.log(errmsg);
+            return errmsg;
         }
     } catch (err) {
         console.log(err.stack);

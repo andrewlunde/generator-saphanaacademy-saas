@@ -54,7 +54,7 @@ app.put('/callback/v1.0/tenants/*', function (req, res) {
         function (result) {
 <% } -%>
 <% if(HANA){ -%>
-            lib.createSMInstance(services.sm, services.registry.appName + '-' + req.body.subscribedTenantId).then(
+            lib.createSMInstance(services.sm, services.registry.appName, req.body.subscribedTenantId).then(
                 async function (result) {
                     res.status(200).send(tenantURL);
                 },
@@ -90,7 +90,7 @@ app.delete('/callback/v1.0/tenants/*', function (req, res) {
         function (result) {
 <% } -%>
 <% if(HANA){ -%>
-            lib.deleteSMInstance(services.sm, services.registry.appName + '-' + req.body.subscribedTenantId).then(
+            lib.deleteSMInstance(services.sm, services.registry.appName, req.body.subscribedTenantId).then(
                 function (result) {
                     res.status(200).send('');
                 },
@@ -159,48 +159,42 @@ app.get('/srv/subscriptions', function (req, res) {
 
 <% if(HANA){ -%>
 // app database
-app.get('/srv/database', function (req, res) {
+app.get('/srv/database', async function (req, res) {
     if (req.authInfo.checkScope('$XSAPPNAME.User')) {
         // get DB instance
-        lib.getSMInstance(services.sm, services.registry.appName + '-' + req.authInfo.getZoneId()).then(
-            function (serviceBinding) {
-                if (!serviceBinding.hasOwnProperty('error')) {
-                    // connect to DB instance
-                    let hanaOptions = serviceBinding.credentials;
-                    hdbext.createConnection(hanaOptions, function (err, db) {
+        let serviceBinding = await lib.getSMInstance(services.sm, services.registry.appName, req.authInfo.getZoneId());
+        if (!serviceBinding.hasOwnProperty('error')) {
+            // connect to DB instance
+            let hanaOptions = serviceBinding.credentials;
+            hdbext.createConnection(hanaOptions, function (err, db) {
+                if (err) {
+                    console.log(err.message);
+                    res.status(500).send(err.message);
+                    return;
+                }
+                // insert
+                let sqlstmt = `INSERT INTO "<%= projectName %>.db::tenantInfo" ("tenant", "timeStamp") VALUES('` + services.registry.appName + `-` + req.authInfo.getSubdomain() + `-` + req.authInfo.getZoneId() + `', CURRENT_TIMESTAMP)`;
+                db.exec(sqlstmt, function (err, results) {
+                    if (err) {
+                        console.log(err.message);
+                        res.status(500).send(err.message);
+                        return;
+                    }
+                    // query
+                    sqlstmt = 'SELECT * FROM "<%= projectName %>.db::tenantInfo"';
+                    db.exec(sqlstmt, function (err, results) {
                         if (err) {
                             console.log(err.message);
                             res.status(500).send(err.message);
                             return;
                         }
-                        // insert
-                        let sqlstmt = `INSERT INTO "<%= projectName %>.db::tenantInfo" ("tenant", "timeStamp") VALUES('` + services.registry.appName + `-` + req.authInfo.getSubdomain() + `-` + req.authInfo.getZoneId() + `', CURRENT_TIMESTAMP)`;
-                        db.exec(sqlstmt, function (err, results) {
-                            if (err) {
-                                console.log(err.message);
-                                res.status(500).send(err.message);
-                                return;
-                            }
-                            // query
-                            sqlstmt = 'SELECT * FROM "<%= projectName %>.db::tenantInfo"';
-                            db.exec(sqlstmt, function (err, results) {
-                                if (err) {
-                                    console.log(err.message);
-                                    res.status(500).send(err.message);
-                                    return;
-                                }
-                                res.status(200).json(results);
-                            });
-                        });
+                        res.status(200).json(results);
                     });
-                } else {
-                    res.status(500).send(serviceBinding);
-                }
-            },
-            function (err) {
-                console.log(err.stack);
-                res.status(500).send(err.message);
+                });
             });
+        } else {
+            res.status(500).send(serviceBinding);
+        }
     } else {
         res.status(403).send('Forbidden');
     }
