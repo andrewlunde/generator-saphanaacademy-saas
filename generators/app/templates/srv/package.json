@@ -13,6 +13,7 @@
 <% } %>
 <% if(HANA){ %>
         "@sap/hdbext": "latest",
+        "uuid": "latest",
 <% } %>
 <% if(routes || destination){ %>
         "@sap-cloud-sdk/core": "^1.53",

@@ -2,7 +2,7 @@
   "name": "generator-saphanaacademy-saas",
   "displayName": "SAP HANA Academy SaaS",
   "description": "Yeoman Generator to jump-start BTP Multitenant SaaS Apps",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://www.youtube.com/playlist?list=PLkzo92owKnVx3Sh0nemX8GoSNzJGfsWJM",
   "author": {
