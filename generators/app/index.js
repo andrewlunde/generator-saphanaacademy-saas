@@ -104,7 +104,7 @@ module.exports = class extends Generator {
         dot: true
       })
       .forEach((file) => {
-        if (!(file.includes('/.DS_Store'))) {
+        if (!(file.includes('.DS_Store'))) {
           if (!(this.config.get('HANA') === false && file.substring(0,3) === 'db/')) {
             if (!(file === 'srv/library.js' && this.config.get('SaaSAPI') === false && this.config.get('HANA') === false && this.config.get('routes') === false && this.config.get('destination') === false)) {
               const sOrigin = this.templatePath(file);

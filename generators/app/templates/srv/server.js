@@ -54,7 +54,7 @@ app.put('/callback/v1.0/tenants/*', function (req, res) {
         function (result) {
 <% } -%>
 <% if(HANA){ -%>
-            lib.createSMInstance(services.sm, services.registry.appName, req.body.subscribedTenantId).then(
+            lib.createSMInstance(services.sm, req.body.subscribedTenantId).then(
                 async function (result) {
                     res.status(200).send(tenantURL);
                 },
@@ -90,7 +90,7 @@ app.delete('/callback/v1.0/tenants/*', function (req, res) {
         function (result) {
 <% } -%>
 <% if(HANA){ -%>
-            lib.deleteSMInstance(services.sm, services.registry.appName, req.body.subscribedTenantId).then(
+            lib.deleteSMInstance(services.sm, req.body.subscribedTenantId).then(
                 function (result) {
                     res.status(200).send('');
                 },
@@ -162,7 +162,7 @@ app.get('/srv/subscriptions', function (req, res) {
 app.get('/srv/database', async function (req, res) {
     if (req.authInfo.checkScope('$XSAPPNAME.User')) {
         // get DB instance
-        let serviceBinding = await lib.getSMInstance(services.sm, services.registry.appName, req.authInfo.getZoneId());
+        let serviceBinding = await lib.getSMInstance(services.sm, req.authInfo.getZoneId());
         if (!serviceBinding.hasOwnProperty('error')) {
             // connect to DB instance
             let hanaOptions = serviceBinding.credentials;

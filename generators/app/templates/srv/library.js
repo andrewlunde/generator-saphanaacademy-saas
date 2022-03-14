@@ -197,7 +197,7 @@ async function getSMToken(sm) {
     }
 };
 
-async function getSMInfo(sm, appName, tenantId) {
+async function getSMInfo(sm, tenantId) {
     try {
         let smToken = await getSMToken(sm);
         // get service offering id
@@ -224,7 +224,7 @@ async function getSMInfo(sm, appName, tenantId) {
                     'accessToken': smToken,
                     'serviceOfferingId': res1.data.items[0].id,
                     'servicePlanId': res2.data.items[0].id,
-                    'instanceName': crypto.createHash('sha256').update(appName + '_' + res2.data.items[0].id + '_' + tenantId).digest('base64')
+                    'instanceName': crypto.createHash('sha256').update(res2.data.items[0].id + '_' + tenantId).digest('base64')
                 };
                 return results;
             } else {
@@ -243,16 +243,20 @@ async function getSMInfo(sm, appName, tenantId) {
     }
 };
 
-async function createSMInstance(sm, appName, tenantId) {
+async function createSMInstance(sm, tenantId) {
     try {
-        let smInfo = await getSMInfo(sm, appName, tenantId);
+        let smInfo = await getSMInfo(sm, tenantId);
         // create service instance
         let options1 = {
             method: 'POST',
             url: sm.sm_url + '/v1/service_instances?async=false',
             data: {
                 'name': smInfo.instanceName,
-                'service_plan_id': smInfo.servicePlanId
+                'service_plan_id': smInfo.servicePlanId,
+                'labels': {
+                    'tenant_id': ['hdi_' + tenantId],
+                    'service_plan_id': [smInfo.servicePlanId]
+                }
             },
             headers: {
                 'Authorization': smInfo.accessToken
@@ -266,9 +270,10 @@ async function createSMInstance(sm, appName, tenantId) {
             data: {
                 'name': uuid.v4(),
                 'service_instance_id': res1.data.id,
-                labels: {
-                    'app_id': [appName + '_' + tenantId + '_HDI']
-                },
+                'labels': {
+                    'tenant_id': ['hdi_' + tenantId],
+                    'service_plan_id': [smInfo.servicePlanId]
+                }
             },
             headers: {
                 'Authorization': smInfo.accessToken
@@ -301,13 +306,13 @@ async function createSMInstance(sm, appName, tenantId) {
     }
 };
 
-async function getSMInstance(sm, appName, tenantId) {
+async function getSMInstance(sm, tenantId) {
     try {
         let smToken = await getSMToken(sm);
         // get service binding details
         let options1 = {
             method: 'GET',
-            url: sm.sm_url + "/v1/service_bindings?labelQuery=app_id eq '" + appName + "_" + tenantId + "_HDI'",
+            url: sm.sm_url + "/v1/service_bindings?labelQuery=tenant_id eq 'hdi_" + tenantId + "'",
             headers: {
                 'Authorization': smToken
             }
@@ -326,13 +331,13 @@ async function getSMInstance(sm, appName, tenantId) {
     }
 };
 
-async function deleteSMInstance(sm, appName, tenantId) {
+async function deleteSMInstance(sm, tenantId) {
     try {
-        let smInfo = await getSMInfo(sm, appName, tenantId);
+        let smInfo = await getSMInfo(sm, tenantId);
         // get service binding and service instance ids
         let options1 = {
             method: 'GET',
-            url: sm.sm_url + "/v1/service_bindings?labelQuery=app_id eq '" + appName + "_" + tenantId + "_HDI'",
+            url: sm.sm_url + "/v1/service_bindings?labelQuery=tenant_id eq 'hdi_" + tenantId + "'",
             headers: {
                 'Authorization': smInfo.accessToken
             }
