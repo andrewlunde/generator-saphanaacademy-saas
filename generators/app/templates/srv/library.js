@@ -254,8 +254,7 @@ async function createSMInstance(sm, tenantId) {
                 'name': smInfo.instanceName,
                 'service_plan_id': smInfo.servicePlanId,
                 'labels': {
-                    'tenant_id': ['hdi_' + tenantId],
-                    'service_plan_id': [smInfo.servicePlanId]
+                    'tenant_id': ['hdi_' + tenantId]
                 }
             },
             headers: {
