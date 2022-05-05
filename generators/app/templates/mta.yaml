@@ -10,6 +10,11 @@ modules:
   - name: <%= projectName %>-db
     type: com.sap.xs.hdi-dynamic
     path: db
+    build-parameters:
+      ignore:
+        - default-*.json
+        - .env
+        - "*node_modules*"
     parameters:
       memory: 256M
       disk-quota: 512M
@@ -31,6 +36,11 @@ modules:
   - name: <%= projectName %>-srv
     type: nodejs
     path: srv
+    build-parameters:
+      ignore:
+        - default-*.json
+        - .env
+        - "*node_modules*"
     parameters:
       memory: 256M
       disk-quota: 512M
@@ -60,6 +70,11 @@ modules:
   - name: <%= projectName %>
     type: html5
     path: app
+    build-parameters:
+      ignore:
+        - default-*.json
+        - .env
+        - "*node_modules*"
     parameters:
       memory: 256M
       disk-quota: 512M
