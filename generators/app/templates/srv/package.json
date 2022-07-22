@@ -7,16 +7,16 @@
         "express": "latest",
         "cfenv": "latest",
         "body-parser": "latest",
-<% if(SaaSAPI || HANA){ -%>
-        "axios": "latest",
-        "qs": "latest",
-<% } %>
 <% if(HANA){ %>
         "@sap/hdbext": "latest",
-        "uuid": "latest",
+        "@sap/instance-manager": "latest",
+        "axios": "latest",
 <% } %>
-<% if(routes || destination){ %>
-        "@sap-cloud-sdk/core": "^1.53",
+<% if(routes || SaaSAPI || destination){ %>
+        "@sap-cloud-sdk/http-client": "latest",
+<% } %>
+<% if(destination){ %>
+        "@sap-cloud-sdk/connectivity": "latest",
 <% } %>
         "@sap/xsenv": "latest",
         "@sap/xssec": "latest",

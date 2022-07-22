@@ -175,8 +175,8 @@ resources:
                 Password: <SetValueInCockpit>
 <% } -%>
 <% if(destination){ -%>
-              - Name: <%= projectName %>-dest
-                Description: Application Destination
+              - Name: <%= projectName %>-nw
+                Description: Northwind
                 URL: https://services.odata.org/Northwind/Northwind.svc
                 Type: HTTP
                 ProxyType: Internet

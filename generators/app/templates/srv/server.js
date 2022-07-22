@@ -18,8 +18,8 @@ const services = xsenv.getServices({
 });
 
 <% if (destination) {-%>
-const core = require('@sap-cloud-sdk/core');
-const { retrieveJwt } = require('@sap-cloud-sdk/core');
+const httpClient = require('@sap-cloud-sdk/http-client');
+const { retrieveJwt } = require('@sap-cloud-sdk/connectivity');
 <% } -%>
 
 const xssec = require('@sap/xssec');
@@ -38,6 +38,8 @@ const lib = require('./library');
 
 <% if(HANA){ -%>
 const hdbext = require('@sap/hdbext');
+const createInstanceManager = require('@sap/instance-manager').create;
+const axios = require('axios');
 <% } -%>
 
 // subscribe/onboard a subscriber tenant
@@ -50,18 +52,47 @@ app.put('/callback/v1.0/tenants/*', function (req, res) {
     let tenantURL = 'https:\/\/' + tenantHost + /\.(.*)/gm.exec(appEnv.app.application_uris[0])[0];
     console.log('Subscribe: ', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantHost, tenantURL);
 <% if(routes){ -%>
+    // create route
     lib.createRoute(tenantHost, services.registry.appName).then(
         function (result) {
 <% } -%>
 <% if(HANA){ -%>
-            lib.createSMInstance(services.sm, req.body.subscribedTenantId).then(
-                async function (result) {
-                    res.status(200).send(tenantURL);
-                },
-                function (err) {
-                    console.log(err.stack);
+            // create DB
+            createInstanceManager(services.sm, async function (err, serviceManager) {
+                if (err) {
+                    console.log(err.message);
                     res.status(500).send(err.message);
+                    return;
+                }
+                serviceManager.create(req.body.subscribedTenantId, async function (err, instance) {
+                    if (err) {
+                        console.log(err.message);
+                        res.status(500).send(err.message);
+                        return;
+                    }
+                    console.log('CREATED DB:', req.body.subscribedTenantId, instance.status);
+                    // deploy DB artefacts
+                    instance.id = req.body.subscribedTenantId;
+                    let options = {
+                        method: 'POST',
+                        data: instance,
+                        url: process.env.db_api_url + '/v1/deploy/to/instance',
+                        headers: {
+                            'Authorization': 'Basic ' + Buffer.from(process.env.db_api_user + ':' + process.env.db_api_password).toString('base64'),
+                            'Content-Type': 'application/json'
+                        }
+                    };
+                    try {
+                        await axios(options);
+                        console.log('DEPLOYED DB:', req.body.subscribedTenantId);
+                        res.status(200).send(tenantURL);
+                    } catch (err) {
+                        console.log(err.message);
+                        res.status(500).send(err.message);
+                        return err.message;
+                    }
                 });
+            });
 <% } else if(routes) { -%>
             res.status(200).send(tenantURL);
 <% } -%>
@@ -86,18 +117,28 @@ app.delete('/callback/v1.0/tenants/*', function (req, res) {
 <% } -%>
     console.log('Unsubscribe: ', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantHost);
 <% if(routes){ -%>
+    // delete route
     lib.deleteRoute(tenantHost, services.registry.appName).then(
         function (result) {
 <% } -%>
 <% if(HANA){ -%>
-            lib.deleteSMInstance(services.sm, req.body.subscribedTenantId).then(
-                function (result) {
-                    res.status(200).send('');
-                },
-                function (err) {
-                    console.log(err.stack);
+            // delete DB
+            createInstanceManager(services.sm, async function (err, serviceManager) {
+                if (err) {
+                    console.log(err.message);
                     res.status(500).send(err.message);
+                    return;
+                }
+                serviceManager.delete(req.body.subscribedTenantId, async function (err) {
+                    if (err) {
+                        console.log(err.message);
+                        res.status(500).send(err.message);
+                        return;
+                    }
+                    console.log('DELETED DB:', req.body.subscribedTenantId);
+                    res.status(200).send('');
                 });
+            });
 <% } else if(routes) { -%>
             res.status(200).send('');
 <% } -%>
@@ -158,43 +199,51 @@ app.get('/srv/subscriptions', function (req, res) {
 <% } -%>
 
 <% if(HANA){ -%>
-// app database
+// app DB
 app.get('/srv/database', async function (req, res) {
     if (req.authInfo.checkScope('$XSAPPNAME.User')) {
-        // get DB instance
-        let serviceBinding = await lib.getSMInstance(services.sm, req.authInfo.getZoneId());
-        if (!serviceBinding.hasOwnProperty('error')) {
-            // connect to DB instance
-            let hanaOptions = serviceBinding.credentials;
-            hdbext.createConnection(hanaOptions, function (err, db) {
+        // get DB credentials
+        createInstanceManager(services.sm, async function (err, serviceManager) {
+            if (err) {
+                console.log(err.message);
+                res.status(500).send(err.message);
+                return;
+            }
+            serviceManager.get(req.authInfo.getZoneId(), async function (err, serviceBinding) {
                 if (err) {
                     console.log(err.message);
                     res.status(500).send(err.message);
                     return;
                 }
-                // insert
-                let sqlstmt = `INSERT INTO "<%= projectName %>.db::tenantInfo" ("tenant", "timeStamp") VALUES('` + services.registry.appName + `-` + req.authInfo.getSubdomain() + `-` + req.authInfo.getZoneId() + `', CURRENT_TIMESTAMP)`;
-                db.exec(sqlstmt, function (err, results) {
+                // connect to DB
+                hdbext.createConnection(serviceBinding.credentials, function (err, db) {
                     if (err) {
                         console.log(err.message);
                         res.status(500).send(err.message);
                         return;
                     }
-                    // query
-                    sqlstmt = 'SELECT * FROM "<%= projectName %>.db::tenantInfo"';
+                    // insert
+                    let sqlstmt = `INSERT INTO "<%= projectName %>.db::tenantInfo" ("tenant", "timeStamp") VALUES('` + services.registry.appName + `-` + req.authInfo.getSubdomain() + `-` + req.authInfo.getZoneId() + `', CURRENT_TIMESTAMP)`;
                     db.exec(sqlstmt, function (err, results) {
                         if (err) {
                             console.log(err.message);
                             res.status(500).send(err.message);
                             return;
                         }
-                        res.status(200).json(results);
+                        // query
+                        sqlstmt = 'SELECT * FROM "<%= projectName %>.db::tenantInfo"';
+                        db.exec(sqlstmt, function (err, results) {
+                            if (err) {
+                                console.log(err.message);
+                                res.status(500).send(err.message);
+                                return;
+                            }
+                            res.status(200).json(results);
+                        });
                     });
                 });
             });
-        } else {
-            res.status(500).send(serviceBinding);
-        }
+        });
     } else {
         res.status(403).send('Forbidden');
     }
@@ -206,9 +255,9 @@ app.get('/srv/database', async function (req, res) {
 app.get('/srv/destinations', async function (req, res) {
     if (req.authInfo.checkScope('$XSAPPNAME.User')) {
         try {
-            let res1 = await core.executeHttpRequest(
+            let res1 = await httpClient.executeHttpRequest(
                 {
-                    destinationName: req.query.destination,
+                    destinationName: req.query.destination || '',
                     jwt: retrieveJwt(req)
                 },
                 {

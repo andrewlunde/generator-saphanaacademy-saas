@@ -106,7 +106,7 @@ module.exports = class extends Generator {
       .forEach((file) => {
         if (!(file.includes('.DS_Store'))) {
           if (!(this.config.get('HANA') === false && file.substring(0,3) === 'db/')) {
-            if (!(file === 'srv/library.js' && this.config.get('SaaSAPI') === false && this.config.get('HANA') === false && this.config.get('routes') === false && this.config.get('destination') === false)) {
+            if (!(file === 'srv/library.js' && this.config.get('SaaSAPI') === false && this.config.get('routes') === false)) {
               const sOrigin = this.templatePath(file);
               let fileDest = file;
               fileDest = fileDest.replace('dotgitignore', '.gitignore');
@@ -142,13 +142,15 @@ module.exports = class extends Generator {
     if (this.config.get('customDomain') !== "") {
       this.log("Important: The wildcard custom domain route needs be mapped via the following CF CLI command after deployment:");
       this.log("  cf map-route " + this.config.get('projectName') + " " + this.config.get('customDomain') + ' --hostname "*"');
+      this.log("");
     }
     if (this.config.get('routes')) {
       this.log("Important: The CF API is being used so please be sure to update the destination " + this.config.get('projectName') + "-cfapi - Token Service URL (replace login with uaa) and set User & Password. Client Secret needs to be empty.");
+      this.log("");
     }
     if (this.config.get('destination')) {
       this.log("Don't forget to configure the destination for each subscriber.");
+      this.log("");
     }
-    this.log("");
   }
 };
