@@ -1,23 +1,25 @@
 const express = require('express');
 const app = express();
-const bodyParser = require('body-parser');
 
+<% if(BTPRuntime === 'CF' && customDomain === ''){ -%>
 const cfenv = require('cfenv');
 const appEnv = cfenv.getAppEnv();
+<% } -%>
+
 const xsenv = require('@sap/xsenv');
 xsenv.loadEnv();
 const services = xsenv.getServices({
-    uaa: { tag: 'xsuaa' },
-    registry: { tag: 'SaaS' }
-<% if(HANA){ -%>
+    uaa: { label: 'xsuaa' },
+    registry: { label: 'saas-registry' }
+<% if(hana){ -%>
     , sm: { label: 'service-manager' }
 <% } -%>
-<% if(destination){ -%>
-    , dest: { tag: 'destination' }
+<% if(apiDest){ -%>
+    , dest: { label: 'destination' }
 <% } -%>
 });
 
-<% if (destination) {-%>
+<% if (apiDest) {-%>
 const httpClient = require('@sap-cloud-sdk/http-client');
 const { retrieveJwt } = require('@sap-cloud-sdk/connectivity');
 <% } -%>
@@ -30,13 +32,14 @@ app.use(passport.authenticate('JWT', {
     session: false
 }));
 
-app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-<% if(SaaSAPI || HANA || routes){ -%>
+<% if(SaaSAPI || hana || routes){ -%>
 const lib = require('./library');
 <% } -%>
 
-<% if(HANA){ -%>
+<% if(hana){ -%>
 const hdbext = require('@sap/hdbext');
 const createInstanceManager = require('@sap/instance-manager').create;
 const axios = require('axios');
@@ -44,19 +47,36 @@ const axios = require('axios');
 
 // subscribe/onboard a subscriber tenant
 app.put('/callback/v1.0/tenants/*', function (req, res) {
-<% if(customDomain !== ""){ -%>
+    if (!req.authInfo.checkLocalScope('Callback')) {
+        console.log('Forbidden: Subscribe requires Callback scope!');
+        res.status(403).send('Forbidden');
+        return;
+    }
+<% if(BTPRuntime === 'CF'){ -%>
+<% if(customDomain !== ''){ -%>
     let tenantHost = req.body.subscribedSubdomain;
 <% } else { -%>
     let tenantHost = req.body.subscribedSubdomain + '-' + appEnv.app.space_name.toLowerCase().replace(/_/g, '-') + '-' + services.registry.appName.toLowerCase().replace(/_/g, '-');
 <% } -%>
+<% } else { -%>
+    let tenantHost = req.body.subscribedSubdomain;
+<% } -%>
+<% if(BTPRuntime === 'CF'){ -%>
+<% if(customDomain !== ''){ -%>
+    let tenantURL = 'https:\/\/' + tenantHost + '.<%= customDomain %>';
+<% } else { -%>
     let tenantURL = 'https:\/\/' + tenantHost + /\.(.*)/gm.exec(appEnv.app.application_uris[0])[0];
-    console.log('Subscribe: ', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantHost, tenantURL);
+<% } -%>
+<% } else { -%>
+    let tenantURL = 'https:\/\/' + tenantHost + '.' + process.env.clusterDomain;
+<% } -%>
+    console.log('Subscribe:', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantHost, tenantURL);
 <% if(routes){ -%>
     // create route
     lib.createRoute(tenantHost, services.registry.appName).then(
         function (result) {
 <% } -%>
-<% if(HANA){ -%>
+<% if(hana){ -%>
             // create DB
             createInstanceManager(services.sm, async function (err, serviceManager) {
                 if (err) {
@@ -103,25 +123,34 @@ app.put('/callback/v1.0/tenants/*', function (req, res) {
             res.status(500).send(err.message);
         });
 <% } -%>
-<% if(!routes && !HANA){ -%>
+<% if(!routes && !hana){ -%>
     res.status(200).send(tenantURL);
 <% } -%>
 });
 
 // unsubscribe/offboard a subscriber tenant
 app.delete('/callback/v1.0/tenants/*', function (req, res) {
-<% if(customDomain !== ""){ -%>
+    if (!req.authInfo.checkLocalScope('Callback')) {
+        console.log('Forbidden: Unsubscribe requires Callback scope!');
+        res.status(403).send('Forbidden');
+        return;
+    }
+<% if(BTPRuntime === 'CF'){ -%>
+<% if(customDomain !== ''){ -%>
     let tenantHost = req.body.subscribedSubdomain;
 <% } else { -%>
     let tenantHost = req.body.subscribedSubdomain + '-' + appEnv.app.space_name.toLowerCase().replace(/_/g, '-') + '-' + services.registry.appName.toLowerCase().replace(/_/g, '-');
 <% } -%>
-    console.log('Unsubscribe: ', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantHost);
+<% } else { -%>
+    let tenantHost = req.body.subscribedSubdomain;
+<% } -%>
+    console.log('Unsubscribe:', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantHost);
 <% if(routes){ -%>
     // delete route
     lib.deleteRoute(tenantHost, services.registry.appName).then(
         function (result) {
 <% } -%>
-<% if(HANA){ -%>
+<% if(hana){ -%>
             // delete DB
             createInstanceManager(services.sm, async function (err, serviceManager) {
                 if (err) {
@@ -149,19 +178,23 @@ app.delete('/callback/v1.0/tenants/*', function (req, res) {
             res.status(500).send(err.message);
         });
 <% } -%>
-<% if(!routes && !HANA){ -%>
+<% if(!routes && !hana){ -%>
     res.status(200).send('');
 <% } -%>
 });
 
-<% if(destination){ -%>
+<% if(apiDest){ -%>
 // get reuse service dependencies
 app.get('/callback/v1.0/dependencies', function (req, res) {
-    let tenantId = req.params.tenantId;
+    if (!req.authInfo.checkLocalScope('Callback')) {
+        console.log('Forbidden: Dependencies requires Callback scope!');
+        res.status(403).send('Forbidden');
+        return;
+    }
     let dependencies = [{
         'xsappname': services.dest.xsappname
     }];
-    console.log('Dependencies: ', tenantId, dependencies);
+    console.log('Dependencies:', dependencies);
     res.status(200).json(dependencies);
 });
 <% } -%>
@@ -183,7 +216,7 @@ app.get('/srv/info', function (req, res) {
 <% if(SaaSAPI){ -%>
 // app subscriptions
 app.get('/srv/subscriptions', function (req, res) {
-    if (req.authInfo.checkScope('$XSAPPNAME.Administrator')) {
+    if (req.authInfo.checkScope('$XSAPPNAME.Admin')) {
         lib.getSubscriptions(services.registry).then(
             function (result) {
                 res.status(200).json(result);
@@ -198,7 +231,7 @@ app.get('/srv/subscriptions', function (req, res) {
 });
 <% } -%>
 
-<% if(HANA){ -%>
+<% if(hana){ -%>
 // app DB
 app.get('/srv/database', async function (req, res) {
     if (req.authInfo.checkScope('$XSAPPNAME.User')) {
@@ -250,7 +283,7 @@ app.get('/srv/database', async function (req, res) {
 });
 <% } -%>
 
-<% if(destination){ -%>
+<% if(apiDest){ -%>
 // destination reuse service
 app.get('/srv/destinations', async function (req, res) {
     if (req.authInfo.checkScope('$XSAPPNAME.User')) {

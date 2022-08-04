@@ -6,7 +6,7 @@ parameters:
   enable-parallel-deployments: true
 
 modules:
-<% if(HANA){ -%>
+<% if(hana){ -%>
   - name: <%= projectName %>-db
     type: com.sap.xs.hdi-dynamic
     path: db
@@ -55,7 +55,7 @@ modules:
     requires:
       - name: <%= projectName %>-uaa
       - name: <%= projectName %>-registry
-<% if(HANA){ -%>
+<% if(hana){ -%>
       - name: <%= projectName %>-sm
       - name: db_api
         properties:
@@ -63,7 +63,7 @@ modules:
           db_api_user: ~{user}
           db_api_password: ~{password}
 <% } -%>
-<% if(destination || routes){ -%>
+<% if((routes && BTPRuntime === 'CF') || apiDest){ -%>
       - name: <%= projectName %>-dest
 <% } -%>
 
@@ -117,7 +117,7 @@ resources:
       xsuaa-app: ${space}-~{app_api/application}
       config:
         xsappname: ${xsuaa-app}
-<% if(HANA){ -%>
+<% if(hana){ -%>
   - name: <%= projectName %>-sm
     type: org.cloudfoundry.managed-service
     parameters:
@@ -141,16 +141,16 @@ resources:
         appUrls:
 <% if(customDomain !== ""){ -%>
           onSubscription: https://<%= projectName %>-srv.<%= customDomain %>/callback/v1.0/tenants/{tenantId}
-<% if(destination){ -%>
+<% if(apiDest){ -%>
           getDependencies: https://<%= projectName %>-srv.<%= customDomain %>/callback/v1.0/dependencies
 <% } -%>
 <% } else { -%>
           onSubscription: https://${org}-${space}-<%= projectName %>-srv.${default-domain}/callback/v1.0/tenants/{tenantId}
-<% if(destination){ -%>
+<% if(apiDest){ -%>
           getDependencies: https://${org}-${space}-<%= projectName %>-srv.${default-domain}/callback/v1.0/dependencies
 <% } -%>
 <% } -%>
-<% if(routes || destination){ -%>
+<% if((routes && BTPRuntime === 'CF') || apiDest){ -%>
   - name: <%= projectName %>-dest
     type: org.cloudfoundry.managed-service
     parameters:
@@ -161,7 +161,7 @@ resources:
           instance:
             existing_destinations_policy: ignore
             destinations:
-<% if(routes){ -%>
+<% if(routes && BTPRuntime === 'CF'){ -%>
               - Name: <%= projectName %>-cfapi
                 Description: CF Cloud Controller API
                 URL: ${controller-url}
@@ -174,7 +174,7 @@ resources:
                 User: <SetValueInCockpit>
                 Password: <SetValueInCockpit>
 <% } -%>
-<% if(destination){ -%>
+<% if(apiDest){ -%>
               - Name: <%= projectName %>-nw
                 Description: Northwind
                 URL: https://services.odata.org/Northwind/Northwind.svc

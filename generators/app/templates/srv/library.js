@@ -9,10 +9,12 @@ module.exports = {
 <% } -%>
 };
 
+<% if (BTPRuntime === 'CF' && routes) {-%>
 const cfenv = require('cfenv');
 const appEnv = cfenv.getAppEnv();
+<% } -%>
 
-<% if (routes || SaaSAPI) {-%>
+<% if ((BTPRuntime === 'CF' && routes) || SaaSAPI) {-%>
 const httpClient = require('@sap-cloud-sdk/http-client');
 <% } -%>
 
@@ -33,6 +35,7 @@ async function getSubscriptions(registry) {
 <% } -%>
 
 <% if (routes) {-%>
+<% if (BTPRuntime === 'CF') {-%>
 async function getCFInfo(appname) {
     try {
         // get app GUID
@@ -142,4 +145,94 @@ async function deleteRoute(tenantHost, appname) {
             return err.message;
         });
 };
+<% } else { -%>
+const k8s = require('@kubernetes/client-node');
+
+async function createRoute(tenantHost, appName) {
+    try {
+        const apiRule = {
+            apiVersion: process.env.apiRuleGroup + '/' +  process.env.apiRuleVersion,
+            kind: 'APIRule',
+            metadata: {
+                name: tenantHost,
+                labels: {
+                    'app.kubernetes.io/managed-by': '<%= projectName %>-srv'
+                }
+            },
+            spec: {
+                gateway: process.env.gateway,
+                rules: [
+                    {
+                        path: '/.*',
+                        accessStrategies: [
+                            {
+                                config: {},
+                                handler: 'noop'
+                            }
+                        ],
+                        mutators: [
+                            {
+                                handler: 'header',
+                                config: {
+                                    headers: {
+                                        "x-forwarded-host": tenantHost + '.' + process.env.clusterDomain
+                                    }
+                                }
+                            }
+                        ],
+                        methods: [
+                            'GET',
+                            'POST',
+                            'PUT',
+                            'PATCH',
+                            'DELETE',
+                            'HEAD',
+                        ]
+                    }
+                ],
+                service: {
+                    host: tenantHost + '.' + process.env.clusterDomain,
+                    name: process.env.appServiceName,
+                    port: parseInt(process.env.appServicePort)
+                }
+            }
+        };
+        const kc = new k8s.KubeConfig();
+        kc.loadFromCluster();
+        const k8sApi = kc.makeApiClient(k8s.CustomObjectsApi);
+        const result = await k8sApi.createNamespacedCustomObject(
+            process.env.apiRuleGroup,
+            process.env.apiRuleVersion,
+            process.env.namespace,
+            process.env.apiRules,
+            apiRule
+        );
+        console.log('APIRule created:', appName, tenantHost, result.response.statusCode, result.response.statusMessage);
+        return {};
+    } catch (err) {
+        console.log(err.stack);
+        return err.message;
+    }
+};
+
+async function deleteRoute(tenantHost, appName) {
+    try {
+        const kc = new k8s.KubeConfig();
+        kc.loadFromCluster();
+        const k8sApi = kc.makeApiClient(k8s.CustomObjectsApi);
+        const result = await k8sApi.deleteNamespacedCustomObject(
+            process.env.apiRuleGroup,
+            process.env.apiRuleVersion,
+            process.env.namespace,
+            process.env.apiRules,
+            tenantHost
+        );
+        console.log('APIRule deleted:', appName, tenantHost, result.response.statusCode, result.response.statusMessage);
+        return {};
+    } catch (err) {
+        console.log(err.stack);
+        return err.message;
+    }
+};
+<% } -%>
 <% } -%>

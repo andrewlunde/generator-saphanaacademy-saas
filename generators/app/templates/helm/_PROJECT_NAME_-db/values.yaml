@@ -1,0 +1,17 @@
+dockerID: <%= dockerID %>
+clusterDomain: <%= clusterDomain %>
+gateway: <%= gateway %>
+services:
+  db:
+    name: <%= projectName %>-db
+    bindingSecretName: <%= projectName %>-db-binding-secret
+    image:
+      repository: <%= projectName %>-db
+      tag: "latest"
+      pullPolicy: Always
+      imagePullSecretName: docker-config
+      port: 5002
+    service:
+      port: 5002
+      user: GHDHSDHSHHDSDSDSDDSDSDSD
+      password: sqdhlqsdfhlkjshlkjdfklYHGHGH565757532

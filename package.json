@@ -2,7 +2,7 @@
   "name": "generator-saphanaacademy-saas",
   "displayName": "SAP HANA Academy SaaS",
   "description": "Yeoman Generator to jump-start BTP Multitenant SaaS Apps",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://www.youtube.com/playlist?list=PLkzo92owKnVx3Sh0nemX8GoSNzJGfsWJM",
   "author": {
@@ -28,11 +28,10 @@
     "cfapi",
     "saphanaacademy",
     "hanaacademy",
-    "dpe",
-    "digitalpartnerengineering",
     "partner",
-    "innovation",
-    "lab",
+    "kyma",
+    "hana",
+    "saas",
     "yeoman-generator"
   ],
   "devDependencies": {
@@ -51,6 +50,7 @@
     "npm": ">= 4.0.0"
   },
   "dependencies": {
+    "@sap/hdi-dynamic-deploy": "^2.4.1",
     "chalk": "^4.1.0",
     "yeoman-generator": "^4.11.0",
     "yosay": "^2.0.2"

@@ -1,23 +1,31 @@
 {
     "name": "<%= projectName %>-srv",
+<% if(BTPRuntime === 'CF'){ -%>
     "engines": {
-        "node": "14.x"
+        "node": "^14"
     },
+<% } -%>
     "dependencies": {
         "express": "latest",
-        "cfenv": "latest",
-        "body-parser": "latest",
-<% if(HANA){ %>
+<% if(hana){ %>
         "@sap/hdbext": "latest",
         "@sap/instance-manager": "latest",
+<% } %>
+<% if((routes && BTPRuntime === 'Kyma') || hana){ %>
         "axios": "latest",
 <% } %>
-<% if(routes || SaaSAPI || destination){ %>
+<% if(routes && BTPRuntime === 'Kyma'){ %>
+        "@kubernetes/client-node": "latest",
+<% } %>
+<% if((routes && BTPRuntime === 'CF') || SaaSAPI || apiDest){ %>
         "@sap-cloud-sdk/http-client": "latest",
 <% } %>
-<% if(destination){ %>
+<% if(apiDest){ %>
         "@sap-cloud-sdk/connectivity": "latest",
 <% } %>
+<% if(BTPRuntime === 'CF' && (customDomain === '' || routes)){ -%>
+        "cfenv": "latest",
+<% } -%>
         "@sap/xsenv": "latest",
         "@sap/xssec": "latest",
         "passport": "latest"

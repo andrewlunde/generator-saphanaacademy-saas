@@ -43,15 +43,58 @@ module.exports = class extends Generator {
         default: "SaaS Multitenant Apps"
       },
       {
+        type: "list",
+        name: "BTPRuntime",
+        message: "Which runtime will you be deploying the project to?",
+        choices: [{ name: "SAP BTP, Cloud Foundry runtime", value: "CF" }, { name: "SAP BTP, Kyma runtime", value: "Kyma" }],
+        default: "CF"
+      },
+      {
+        when: response => response.BTPRuntime === "Kyma",
+        type: "input",
+        name: "namespace",
+        message: "What SAP BTP, Kyma runtime namespace will you be deploying to?",
+        validate: (s) => {
+          if (/^[a-z0-9-]*$/g.test(s) && s.length > 0 && s.substring(0, 1) !== '-' && s.substring(s.length - 1) !== '-') {
+            return true;
+          }
+          return "Your SAP BTP, Kyma runtime namespace can only contain lowercase alphanumeric characters or -.";
+        },
+        default: "default"
+      },
+      {
+        when: response => response.BTPRuntime === "Kyma",
+        type: "input",
+        name: "dockerID",
+        message: "What is your Docker ID?",
+        validate: (s) => {
+          if (/^[a-z0-9]*$/g.test(s) && s.length >= 4 && s.length <= 30) {
+            return true;
+          }
+          return "Your Docker ID must be between 4 and 30 characters long and can only contain numbers and lowercase letters.";
+        },
+        default: ""
+      },
+      {
+        when: response => response.BTPRuntime === "Kyma",
+        type: "list",
+        name: "buildCmd",
+        message: "How would you like to build container images?",
+        choices: [{ name: "Paketo (Cloud Native Buildpacks)", value: "pack" }, { name: "Docker", value: "docker" }, { name: "Podman", value: "podman" }],
+        default: "pack"
+      },
+      {
+        when: response => response.BTPRuntime === "CF",
         type: "confirm",
         name: "SaaSAPI",
         message: "Would you like to include an example of using the SaaS API (view subscriptions)?",
         default: false,
       },
       {
+        when: response => response.BTPRuntime === "CF",
         type: "confirm",
-        name: "HANA",
-        message: "Would you like to include HANA persistence (schema separation)?",
+        name: "hana",
+        message: "Would you like to include SAP HANA Cloud persistence (schema separation)?",
         default: false,
       },
       {
@@ -70,14 +113,28 @@ module.exports = class extends Generator {
         default: "",
       },
       {
-        type: "confirm",
-        name: "routes",
-        message: "Would you like to include creation/deletion of tenant routes on subscribe/unsubscribe (using the CF API)? NB: This is not necessary when using a wildcard custom domain.",
-        default: false,
+        when: response => response.BTPRuntime === "Kyma" && response.customDomain === "",
+        type: "input",
+        name: "clusterDomain",
+        message: "What is the cluster domain of your SAP BTP, Kyma runtime?",
+        default: "0000000.kyma.ondemand.com"
+      },
+      {
+        when: response => response.BTPRuntime === "Kyma" && response.customDomain !== "",
+        type: "input",
+        name: "gateway",
+        message: "What is the gateway for the custom domain in your SAP BTP, Kyma runtime?",
+        default: "gateway-name.namespace.svc.cluster.local"
       },
       {
         type: "confirm",
-        name: "destination",
+        name: "routes",
+        message: "Would you like to include creation/deletion of tenant routes (CF) or API Rules (Kyma) / on subscribe/unsubscribe?",
+        default: true,
+      },
+      {
+        type: "confirm",
+        name: "apiDest",
         message: "Would you like to include an example of using the destination reuse service?",
         default: false,
       },
@@ -91,11 +148,29 @@ module.exports = class extends Generator {
       if (answers.newDir) {
         this.destinationRoot(`${answers.projectName}`);
       }
+      if (answers.BTPRuntime !== "Kyma") {
+        answers.namespace = "";
+        answers.dockerID = "";
+        answers.clusterDomain = "";
+        answers.gateway = "";
+        answers.buildCmd = "";
+      } else {
+        if (answers.customDomain !== "") {
+          answers.clusterDomain = answers.customDomain;
+        } else {
+          answers.gateway = "kyma-gateway.kyma-system.svc.cluster.local";
+        }
+        answers.SaaSAPI = false;
+        answers.hana = false;
+      }
+      answers.destinationPath = this.destinationPath();
       this.config.set(answers);
     });
   }
 
   writing() {
+    var answers = this.config;
+    // scaffold the project
     this.sourceRoot(path.join(__dirname, "templates"));
     glob
       .sync("**", {
@@ -105,13 +180,27 @@ module.exports = class extends Generator {
       })
       .forEach((file) => {
         if (!(file.includes('.DS_Store'))) {
-          if (!(this.config.get('HANA') === false && file.substring(0,3) === 'db/')) {
-            if (!(file === 'srv/library.js' && this.config.get('SaaSAPI') === false && this.config.get('routes') === false)) {
-              const sOrigin = this.templatePath(file);
-              let fileDest = file;
-              fileDest = fileDest.replace('dotgitignore', '.gitignore');
-              const sTarget = this.destinationPath(fileDest);
-              this.fs.copyTpl(sOrigin, sTarget, this.config.getAll());
+          if (!(answers.get('hana') === false && file.substring(0, 3) === 'db/')) {
+            if (!(file === 'srv/library.js' && answers.get('SaaSAPI') === false && answers.get('routes') === false)) {
+              if (!((file.substring(0, 5) === 'helm/' || file.includes('/Dockerfile') || file === 'dotdockerignore' || file === 'Makefile') && answers.get('BTPRuntime') !== 'Kyma')) {
+                if (!((file.substring(0, 3) === 'db/' || file.includes('helm/_PROJECT_NAME_-db')) && answers.get('hana') === false)) {
+                  if (!((file.includes('role.yaml') || file.includes('binding-role.yaml')) && answers.get('routes') === false)) {
+                    if (!((file.includes('service-sm.yaml') || file.includes('binding-sm.yaml')) && answers.get('hana') === false)) {
+                      if (!((file.includes('service-dest.yaml') || file.includes('binding-dest.yaml')) && answers.get('apiDest') === false)) {
+                        if (!((file === 'mta.yaml' || file === 'xs-security.json') && answers.get('BTPRuntime') !== 'CF')) {
+                          const sOrigin = this.templatePath(file);
+                          let fileDest = file;
+                          fileDest = fileDest.replace('_PROJECT_NAME_', answers.get('projectName'));
+                          fileDest = fileDest.replace('dotgitignore', '.gitignore');
+                          fileDest = fileDest.replace('dotdockerignore', '.dockerignore');
+                          const sTarget = this.destinationPath(fileDest);
+                          this.fs.copyTpl(sOrigin, sTarget, answers.getAll());
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -120,35 +209,53 @@ module.exports = class extends Generator {
 
   install() {
     var answers = this.config;
-    // build and deploy if requested
-    var mta = "mta_archives/" + answers.get("projectName") + "_0.0.1.mtar";
-    if (answers.get("buildDeploy")) {
-      let opt = { "cwd": this.destinationPath() };
-      let resBuild = this.spawnCommandSync("mbt", ["build"], opt);
-      if (resBuild.status === 0) {
-        this.spawnCommandSync("cf", ["deploy", mta], opt);
+    let opt = { "cwd": this.destinationPath() };
+    if (answers.get('BTPRuntime') === "Kyma") {
+      // Kyma runtime
+      if (answers.get("buildDeploy")) {
+        let resPush = this.spawnCommandSync("make", ["docker-push"], opt);
+        if (resPush.status === 0) {
+          this.spawnCommandSync("make", ["helm-deploy"], opt);
+        }
+      } else {
+        this.log("");
+        this.log("You can build and deploy your project as follows or use a CI/CD pipeline:");
+        this.log(" cd " + answers.get("projectName"));
+        this.log(" make docker-push");
+        this.log(" make helm-deploy");
       }
     } else {
-      this.log("");
-      this.log("You can build and deploy your project from the command line as follows:");
-      this.log(" cd " + answers.get("projectName"));
-      this.log(" mbt build");
-      this.log(" cf deploy " + mta);
+      // Cloud Foundry runtime
+      var mta = "mta_archives/" + answers.get("projectName") + "_0.0.1.mtar";
+      if (answers.get("buildDeploy")) {
+        let resBuild = this.spawnCommandSync("mbt", ["build"], opt);
+        if (resBuild.status === 0) {
+          this.spawnCommandSync("cf", ["deploy", mta], opt);
+        }
+      } else {
+        this.log("");
+        this.log("You can build and deploy your project from the command line as follows:");
+        this.log(" cd " + answers.get("projectName"));
+        this.log(" mbt build");
+        this.log(" cf deploy " + mta);
+      }
     }
   }
 
   end() {
+    var answers = this.config;
+    var opt = { "cwd": answers.get("destinationPath") };
     this.log("");
-    if (this.config.get('customDomain') !== "") {
+    if (answers.get('customDomain') !== "" && answers.get('BTPRuntime') === 'CF') {
       this.log("Important: The wildcard custom domain route needs be mapped via the following CF CLI command after deployment:");
-      this.log("  cf map-route " + this.config.get('projectName') + " " + this.config.get('customDomain') + ' --hostname "*"');
+      this.log("  cf map-route " + answers.get('projectName') + " " + answers.get('customDomain') + ' --hostname "*"');
       this.log("");
     }
-    if (this.config.get('routes')) {
-      this.log("Important: The CF API is being used so please be sure to update the destination " + this.config.get('projectName') + "-cfapi - Token Service URL (replace login with uaa) and set User & Password. Client Secret needs to be empty.");
+    if (answers.get('routes') && answers.get('BTPRuntime') === 'CF') {
+      this.log("Important: The CF API is being used so please be sure to update the destination " + answers.get('projectName') + "-cfapi - Token Service URL (replace login with uaa) and set User & Password. Client Secret needs to be empty.");
       this.log("");
     }
-    if (this.config.get('destination')) {
+    if (answers.get('apiDest')) {
       this.log("Don't forget to configure the destination for each subscriber.");
       this.log("");
     }

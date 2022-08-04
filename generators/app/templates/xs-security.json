@@ -10,20 +10,20 @@
             ]
         },
         {
-            "name": "$XSAPPNAME.Administrator",
-            "description": "Administrate the application"
+            "name": "$XSAPPNAME.Admin",
+            "description": "Admin"
         },
         {
             "name": "$XSAPPNAME.User",
-            "description": "Use the application"
+            "description": "User"
         }
     ],
     "role-templates": [
         {
-            "name": "Administrator",
-            "description": "Administrator",
+            "name": "Admin",
+            "description": "Admin",
             "scope-references": [
-                "$XSAPPNAME.Administrator"
+                "$XSAPPNAME.Admin"
             ]
         },
         {
@@ -36,10 +36,10 @@
     ],
     "role-collections": [
         {
-            "name": "<%= projectName %>_Administrator",
-            "description": "<%= displayName %> Administrator",
+            "name": "<%= projectName %>_Admin",
+            "description": "<%= displayName %> Admin",
             "role-template-references": [
-                "$XSAPPNAME.Administrator",
+                "$XSAPPNAME.Admin",
                 "$XSAPPNAME.User"
             ]
         },
