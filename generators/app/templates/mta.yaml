@@ -83,11 +83,6 @@ modules:
       domain: <%= customDomain %>
 <% } -%>
       keep-existing-routes: true
-    provides:
-      - name: app_api
-        properties:
-          url: ${default-url}
-          application: ${app-name}
     properties:
 <% if(customDomain !== ""){ -%>
       TENANT_HOST_PATTERN: '^(.*).<%= customDomain %>'
@@ -106,17 +101,10 @@ modules:
 resources:
   - name: <%= projectName %>-uaa
     type: org.cloudfoundry.managed-service
-    requires: 
-      - name: app_api
-    properties:
-      XSAPPNAME: ${xsuaa-app}
     parameters:
       path: ./xs-security.json
       service: xsuaa
       service-plan: application
-      xsuaa-app: ${space}-~{app_api/application}
-      config:
-        xsappname: ${xsuaa-app}
 <% if(hana){ -%>
   - name: <%= projectName %>-sm
     type: org.cloudfoundry.managed-service
@@ -126,14 +114,12 @@ resources:
 <% } -%>
   - name: <%= projectName %>-registry
     type: org.cloudfoundry.managed-service
-    requires:
-      - name: <%= projectName %>-uaa
     parameters:
       service: saas-registry
       service-plan: application
       service-name: <%= projectName %>-registry
       config:
-        xsappname: ~{<%= projectName %>-uaa/XSAPPNAME}
+        xsappname: <%= projectName %>
         appName: <%= projectName %>
         displayName: '<%= displayName %>'
         description: '<%= description %>'
