@@ -1,10 +1,5 @@
 {
     "name": "<%= projectName %>-srv",
-<% if(BTPRuntime === 'CF'){ -%>
-    "engines": {
-        "node": "^14"
-    },
-<% } -%>
     "dependencies": {
         "express": "latest",
 <% if(hana){ %>
@@ -23,7 +18,7 @@
 <% if(apiDest){ %>
         "@sap-cloud-sdk/connectivity": "latest",
 <% } %>
-<% if(BTPRuntime === 'CF' && (customDomain === '' || routes)){ -%>
+<% if(BTPRuntime === 'CF' && routes){ -%>
         "cfenv": "latest",
 <% } -%>
         "@sap/xsenv": "latest",

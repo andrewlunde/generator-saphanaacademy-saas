@@ -4,6 +4,7 @@ gateway: <%= gateway %>
 services:
   app:
     name: <%= projectName %>-app
+    tenantHostName: <%= projectName %>
     image:
       repository: <%= projectName %>-app
       tag: "latest"

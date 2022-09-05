@@ -15,6 +15,7 @@ modules:
         - default-*.json
         - .env
         - "*node_modules*"
+        - package-lock.json
     parameters:
       memory: 256M
       disk-quota: 512M
@@ -41,6 +42,7 @@ modules:
         - default-*.json
         - .env
         - "*node_modules*"
+        - package-lock.json
     parameters:
       memory: 256M
       disk-quota: 512M
@@ -49,12 +51,16 @@ modules:
       domain: <%= customDomain %>
 <% } -%>
     provides:
-      - name: srv_api
+      - name: srv-api
         properties:
           url: ${default-url}
     requires:
       - name: <%= projectName %>-uaa
       - name: <%= projectName %>-registry
+      - name: app-api
+        properties:
+          APP_PROTOCOL: ~{protocol}
+          APP_URI: ~{uri}
 <% if(hana){ -%>
       - name: <%= projectName %>-sm
       - name: db_api
@@ -68,13 +74,14 @@ modules:
 <% } -%>
 
   - name: <%= projectName %>
-    type: html5
+    type: approuter.nodejs
     path: app
     build-parameters:
       ignore:
         - default-*.json
         - .env
         - "*node_modules*"
+        - package-lock.json
     parameters:
       memory: 256M
       disk-quota: 512M
@@ -84,14 +91,15 @@ modules:
 <% } -%>
       keep-existing-routes: true
     properties:
-<% if(customDomain !== ""){ -%>
-      TENANT_HOST_PATTERN: '^(.*).<%= customDomain %>'
-<% } else { -%>
-      TENANT_HOST_PATTERN: '^(.*)-${space}-${app-name}.${default-domain}'
-<% } -%>
+      TENANT_HOST_PATTERN: '^(.*)-${default-uri}'
+    provides:
+      - name: app-api
+        properties:
+          protocol: ${protocol}
+          uri: ${default-uri}
     requires:
       - name: <%= projectName %>-uaa
-      - name: srv_api
+      - name: srv-api
         group: destinations
         properties:
           name: srv
@@ -102,9 +110,9 @@ resources:
   - name: <%= projectName %>-uaa
     type: org.cloudfoundry.managed-service
     parameters:
-      path: ./xs-security.json
       service: xsuaa
       service-plan: application
+      path: ./xs-security.json
 <% if(hana){ -%>
   - name: <%= projectName %>-sm
     type: org.cloudfoundry.managed-service
@@ -114,6 +122,8 @@ resources:
 <% } -%>
   - name: <%= projectName %>-registry
     type: org.cloudfoundry.managed-service
+    requires:
+      - name: srv-api
     parameters:
       service: saas-registry
       service-plan: application
@@ -125,17 +135,13 @@ resources:
         description: '<%= description %>'
         category: '<%= category %>'
         appUrls:
-<% if(customDomain !== ""){ -%>
-          onSubscription: https://<%= projectName %>-srv.<%= customDomain %>/callback/v1.0/tenants/{tenantId}
+          onSubscription: ~{srv-api/url}/callback/v1.0/tenants/{tenantId}
 <% if(apiDest){ -%>
-          getDependencies: https://<%= projectName %>-srv.<%= customDomain %>/callback/v1.0/dependencies
+          getDependencies: ~{srv-api/url}/callback/v1.0/dependencies
 <% } -%>
-<% } else { -%>
-          onSubscription: https://${org}-${space}-<%= projectName %>-srv.${default-domain}/callback/v1.0/tenants/{tenantId}
-<% if(apiDest){ -%>
-          getDependencies: https://${org}-${space}-<%= projectName %>-srv.${default-domain}/callback/v1.0/dependencies
-<% } -%>
-<% } -%>
+          onSubscriptionAsync: false
+          onUnSubscriptionAsync: false
+          callbackTimeoutMillis: 300000
 <% if((routes && BTPRuntime === 'CF') || apiDest){ -%>
   - name: <%= projectName %>-dest
     type: org.cloudfoundry.managed-service

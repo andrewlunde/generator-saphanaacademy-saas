@@ -84,7 +84,6 @@ module.exports = class extends Generator {
         default: "pack"
       },
       {
-        when: response => response.BTPRuntime === "CF",
         type: "confirm",
         name: "SaaSAPI",
         message: "Would you like to include an example of using the SaaS API (view subscriptions)?",
@@ -160,7 +159,6 @@ module.exports = class extends Generator {
         } else {
           answers.gateway = "kyma-gateway.kyma-system.svc.cluster.local";
         }
-        answers.SaaSAPI = false;
         answers.hana = false;
       }
       answers.destinationPath = this.destinationPath();

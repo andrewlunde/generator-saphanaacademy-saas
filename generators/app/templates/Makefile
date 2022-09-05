@@ -3,20 +3,20 @@ build-db:
 <% if(buildCmd === 'pack'){ -%>
 	pack build <%= dockerID %>/<%= projectName %>-db:latest -p db -B paketobuildpacks/builder:base
 <% }else{ -%>
-	<%= buildCmd %> build -t <%= dockerID %>/<%= projectName %>-db:latest -f db/Dockerfile .
+	<%= buildCmd %> build --platform amd64 -t <%= dockerID %>/<%= projectName %>-db:latest -f db/Dockerfile .
 <% } -%>
 <% } -%>
 build-srv:
 <% if(buildCmd === 'pack'){ -%>
 	pack build <%= dockerID %>/<%= projectName %>-srv:latest -p srv -B paketobuildpacks/builder:base
 <% }else{ -%>
-	<%= buildCmd %> build -t <%= dockerID %>/<%= projectName %>-srv:latest -f srv/Dockerfile .
+	<%= buildCmd %> build --platform amd64 -t <%= dockerID %>/<%= projectName %>-srv:latest -f srv/Dockerfile .
 <% } -%>
 build-app:
 <% if(buildCmd === 'pack'){ -%>
 	pack build <%= dockerID %>/<%= projectName %>-app:latest -p app -B paketobuildpacks/builder:base
 <% }else{ -%>
-	<%= buildCmd %> build -t <%= dockerID %>/<%= projectName %>-app:latest -f app/Dockerfile .
+	<%= buildCmd %> build --platform amd64 -t <%= dockerID %>/<%= projectName %>-app:latest -f app/Dockerfile .
 <% } -%>
 
 docker-push:<% if(hana){ -%> build-db<% } -%> build-srv build-app

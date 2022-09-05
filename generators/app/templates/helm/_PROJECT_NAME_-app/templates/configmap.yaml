@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ .Values.services.app.name }}
 data:
-  TENANT_HOST_PATTERN: "^(.*).{{ .Values.clusterDomain }}"
+  TENANT_HOST_PATTERN: "^(.*)-{{ .Values.services.app.tenantHostName }}.{{ .Values.clusterDomain }}"
   destinations: |
     [
       {

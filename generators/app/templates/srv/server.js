@@ -1,11 +1,6 @@
 const express = require('express');
 const app = express();
 
-<% if(BTPRuntime === 'CF' && customDomain === ''){ -%>
-const cfenv = require('cfenv');
-const appEnv = cfenv.getAppEnv();
-<% } -%>
-
 const xsenv = require('@sap/xsenv');
 xsenv.loadEnv();
 const services = xsenv.getServices({
@@ -53,27 +48,14 @@ app.put('/callback/v1.0/tenants/*', function (req, res) {
         return;
     }
 <% if(BTPRuntime === 'CF'){ -%>
-<% if(customDomain !== ''){ -%>
-    let tenantHost = req.body.subscribedSubdomain;
+    let tenantURL = process.env.APP_PROTOCOL + ':\/\/' + req.body.subscribedSubdomain + '-' + process.env.APP_URI;
 <% } else { -%>
-    let tenantHost = req.body.subscribedSubdomain + '-' + appEnv.app.space_name.toLowerCase().replace(/_/g, '-') + '-' + services.registry.appName.toLowerCase().replace(/_/g, '-');
+    let tenantURL = 'https:\/\/' + req.body.subscribedSubdomain + '-<%= projectName %>.' + process.env.clusterDomain;
 <% } -%>
-<% } else { -%>
-    let tenantHost = req.body.subscribedSubdomain;
-<% } -%>
-<% if(BTPRuntime === 'CF'){ -%>
-<% if(customDomain !== ''){ -%>
-    let tenantURL = 'https:\/\/' + tenantHost + '.<%= customDomain %>';
-<% } else { -%>
-    let tenantURL = 'https:\/\/' + tenantHost + /\.(.*)/gm.exec(appEnv.app.application_uris[0])[0];
-<% } -%>
-<% } else { -%>
-    let tenantURL = 'https:\/\/' + tenantHost + '.' + process.env.clusterDomain;
-<% } -%>
-    console.log('Subscribe:', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantHost, tenantURL);
+    console.log('Subscribe:', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantURL);
 <% if(routes){ -%>
     // create route
-    lib.createRoute(tenantHost, services.registry.appName).then(
+    lib.createRoute(req.body.subscribedSubdomain, services.registry.appName).then(
         function (result) {
 <% } -%>
 <% if(hana){ -%>
@@ -135,19 +117,10 @@ app.delete('/callback/v1.0/tenants/*', function (req, res) {
         res.status(403).send('Forbidden');
         return;
     }
-<% if(BTPRuntime === 'CF'){ -%>
-<% if(customDomain !== ''){ -%>
-    let tenantHost = req.body.subscribedSubdomain;
-<% } else { -%>
-    let tenantHost = req.body.subscribedSubdomain + '-' + appEnv.app.space_name.toLowerCase().replace(/_/g, '-') + '-' + services.registry.appName.toLowerCase().replace(/_/g, '-');
-<% } -%>
-<% } else { -%>
-    let tenantHost = req.body.subscribedSubdomain;
-<% } -%>
-    console.log('Unsubscribe:', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantHost);
+    console.log('Unsubscribe:', req.body.subscribedSubdomain, req.body.subscribedTenantId);
 <% if(routes){ -%>
     // delete route
-    lib.deleteRoute(tenantHost, services.registry.appName).then(
+    lib.deleteRoute(req.body.subscribedSubdomain, services.registry.appName).then(
         function (result) {
 <% } -%>
 <% if(hana){ -%>

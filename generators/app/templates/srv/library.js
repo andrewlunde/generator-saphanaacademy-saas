@@ -59,7 +59,7 @@ async function getCFInfo(appname) {
     }
 };
 
-async function createRoute(tenantHost, appname) {
+async function createRoute(subscribedSubdomain, appname) {
     getCFInfo(appname).then(
         async function (CFInfo) {
             try {
@@ -68,7 +68,7 @@ async function createRoute(tenantHost, appname) {
                     method: 'POST',
                     url: '/v3/routes',
                     data: {
-                        'host': tenantHost,
+                        'host': subscribedSubdomain + '-' + process.env.APP_URI.split('.')[0],
                         'relationships': {
                             'space': {
                                 'data': {
@@ -95,7 +95,7 @@ async function createRoute(tenantHost, appname) {
                         }]
                     },
                 });
-                console.log('Route created for ' + tenantHost);
+                console.log('Route created for ' + subscribedSubdomain);
                 return res2.data;
             } catch (err) {
                 console.log(err.stack);
@@ -108,14 +108,14 @@ async function createRoute(tenantHost, appname) {
         });
 };
 
-async function deleteRoute(tenantHost, appname) {
+async function deleteRoute(subscribedSubdomain, appname) {
     getCFInfo(appname).then(
         async function (CFInfo) {
             try {
                 // get route id
                 let res1 = await httpClient.executeHttpRequest({ destinationName: '<%= projectName %>-cfapi' }, {
                     method: 'GET',
-                    url: '/v3/apps/' + CFInfo.app_id + '/routes?hosts=' + tenantHost
+                    url: '/v3/apps/' + CFInfo.app_id + '/routes?hosts=' + subscribedSubdomain + '-' + process.env.APP_URI.split('.')[0]
                 });
                 if (res1.data.pagination.total_results === 1) {
                     try {
@@ -124,7 +124,7 @@ async function deleteRoute(tenantHost, appname) {
                             method: 'DELETE',
                             url: '/v3/routes/' + res1.data.resources[0].guid
                         });
-                        console.log('Route deleted for ' + tenantHost);
+                        console.log('Route deleted for ' + subscribedSubdomain);
                         return res2.data;
                     } catch (err) {
                         console.log(err.stack);
@@ -148,8 +148,9 @@ async function deleteRoute(tenantHost, appname) {
 <% } else { -%>
 const k8s = require('@kubernetes/client-node');
 
-async function createRoute(tenantHost, appName) {
+async function createRoute(subscribedSubdomain, appName) {
     try {
+        let tenantHost = subscribedSubdomain  + '-<%= projectName %>';
         const apiRule = {
             apiVersion: process.env.apiRuleGroup + '/' +  process.env.apiRuleVersion,
             kind: 'APIRule',
@@ -207,7 +208,7 @@ async function createRoute(tenantHost, appName) {
             process.env.apiRules,
             apiRule
         );
-        console.log('APIRule created:', appName, tenantHost, result.response.statusCode, result.response.statusMessage);
+        console.log('APIRule created:', appName, subscribedSubdomain, tenantHost, result.response.statusCode, result.response.statusMessage);
         return {};
     } catch (err) {
         console.log(err.stack);
@@ -215,8 +216,9 @@ async function createRoute(tenantHost, appName) {
     }
 };
 
-async function deleteRoute(tenantHost, appName) {
+async function deleteRoute(subscribedSubdomain, appName) {
     try {
+        let tenantHost = subscribedSubdomain  + '-<%= projectName %>';
         const kc = new k8s.KubeConfig();
         kc.loadFromCluster();
         const k8sApi = kc.makeApiClient(k8s.CustomObjectsApi);
@@ -227,7 +229,7 @@ async function deleteRoute(tenantHost, appName) {
             process.env.apiRules,
             tenantHost
         );
-        console.log('APIRule deleted:', appName, tenantHost, result.response.statusCode, result.response.statusMessage);
+        console.log('APIRule deleted:', appName, subscribedSubdomain, tenantHost, result.response.statusCode, result.response.statusMessage);
         return {};
     } catch (err) {
         console.log(err.stack);
