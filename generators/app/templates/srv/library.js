@@ -150,7 +150,7 @@ const k8s = require('@kubernetes/client-node');
 
 async function createRoute(subscribedSubdomain, appName) {
     try {
-        let tenantHost = subscribedSubdomain  + '-<%= projectName %>';
+        let tenantHost = subscribedSubdomain  + '-<%= projectName %>-app';
         const apiRule = {
             apiVersion: process.env.apiRuleGroup + '/' +  process.env.apiRuleVersion,
             kind: 'APIRule',
@@ -218,7 +218,7 @@ async function createRoute(subscribedSubdomain, appName) {
 
 async function deleteRoute(subscribedSubdomain, appName) {
     try {
-        let tenantHost = subscribedSubdomain  + '-<%= projectName %>';
+        let tenantHost = subscribedSubdomain  + '-<%= projectName %>-app';
         const kc = new k8s.KubeConfig();
         kc.loadFromCluster();
         const k8sApi = kc.makeApiClient(k8s.CustomObjectsApi);

@@ -20,7 +20,6 @@ modules:
       memory: 256M
       disk-quota: 512M
 <% if(customDomain !== ""){ -%>
-      host: <%= projectName %>-db
       domain: <%= customDomain %>
 <% } -%>
     properties:
@@ -47,7 +46,6 @@ modules:
       memory: 256M
       disk-quota: 512M
 <% if(customDomain !== ""){ -%>
-      host: <%= projectName %>-srv
       domain: <%= customDomain %>
 <% } -%>
     provides:
@@ -73,7 +71,7 @@ modules:
       - name: <%= projectName %>-dest
 <% } -%>
 
-  - name: <%= projectName %>
+  - name: <%= projectName %>-app
     type: approuter.nodejs
     path: app
     build-parameters:
@@ -86,7 +84,6 @@ modules:
       memory: 256M
       disk-quota: 512M
 <% if(customDomain !== ""){ -%>
-      host: <%= projectName %>
       domain: <%= customDomain %>
 <% } -%>
       keep-existing-routes: true

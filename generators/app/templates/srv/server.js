@@ -50,7 +50,7 @@ app.put('/callback/v1.0/tenants/*', function (req, res) {
 <% if(BTPRuntime === 'CF'){ -%>
     let tenantURL = process.env.APP_PROTOCOL + ':\/\/' + req.body.subscribedSubdomain + '-' + process.env.APP_URI;
 <% } else { -%>
-    let tenantURL = 'https:\/\/' + req.body.subscribedSubdomain + '-<%= projectName %>.' + process.env.clusterDomain;
+    let tenantURL = 'https:\/\/' + req.body.subscribedSubdomain + '-<%= projectName %>-app.' + process.env.clusterDomain;
 <% } -%>
     console.log('Subscribe:', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantURL);
 <% if(routes){ -%>

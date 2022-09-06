@@ -55,9 +55,9 @@
         "token-validity": 3600,
         "redirect-uris": [
 <% if(customDomain){ -%>
-            "https://*-<%= projectName %>.<%= customDomain %>/login/callback"
+            "https://*-<%= projectName %>-app.<%= customDomain %>/login/callback"
 <% } else { -%>
-            "https://*-<%= projectName %>.cfapps.*.hana.ondemand.com/login/callback"
+            "https://*-<%= projectName %>-app.cfapps.*.hana.ondemand.com/login/callback"
 <% } -%>
         ]
     }
