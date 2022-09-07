@@ -51,7 +51,7 @@ modules:
     provides:
       - name: srv-api
         properties:
-          url: ${default-url}
+          srv-url: ${default-url}
     requires:
       - name: <%= projectName %>-uaa
       - name: <%= projectName %>-registry
@@ -100,7 +100,7 @@ modules:
         group: destinations
         properties:
           name: srv
-          url: ~{url}
+          url: ~{srv-url}
           forwardAuthToken: true
 
 resources:
@@ -132,9 +132,9 @@ resources:
         description: '<%= description %>'
         category: '<%= category %>'
         appUrls:
-          onSubscription: ~{srv-api/url}/callback/v1.0/tenants/{tenantId}
+          onSubscription: ~{srv-api/srv-url}/callback/v1.0/tenants/{tenantId}
 <% if(apiDest){ -%>
-          getDependencies: ~{srv-api/url}/callback/v1.0/dependencies
+          getDependencies: ~{srv-api/srv-url}/callback/v1.0/dependencies
 <% } -%>
           onSubscriptionAsync: false
           onUnSubscriptionAsync: false

@@ -50,12 +50,12 @@ app.put('/callback/v1.0/tenants/*', function (req, res) {
 <% if(BTPRuntime === 'CF'){ -%>
     let tenantURL = process.env.APP_PROTOCOL + ':\/\/' + req.body.subscribedSubdomain + '-' + process.env.APP_URI;
 <% } else { -%>
-    let tenantURL = 'https:\/\/' + req.body.subscribedSubdomain + '-<%= projectName %>-app.' + process.env.clusterDomain;
+    let tenantURL = 'https:\/\/' + req.body.subscribedSubdomain + '-' + services.registry.appName + '-app.' + process.env.clusterDomain;
 <% } -%>
     console.log('Subscribe:', req.body.subscribedSubdomain, req.body.subscribedTenantId, tenantURL);
 <% if(routes){ -%>
     // create route
-    lib.createRoute(req.body.subscribedSubdomain, services.registry.appName).then(
+    lib.createRoute(req.body.subscribedSubdomain, services.registry.appName + '-app').then(
         function (result) {
 <% } -%>
 <% if(hana){ -%>
@@ -120,7 +120,7 @@ app.delete('/callback/v1.0/tenants/*', function (req, res) {
     console.log('Unsubscribe:', req.body.subscribedSubdomain, req.body.subscribedTenantId);
 <% if(routes){ -%>
     // delete route
-    lib.deleteRoute(req.body.subscribedSubdomain, services.registry.appName).then(
+    lib.deleteRoute(req.body.subscribedSubdomain, services.registry.appName + '-app').then(
         function (result) {
 <% } -%>
 <% if(hana){ -%>

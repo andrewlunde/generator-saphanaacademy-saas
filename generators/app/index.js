@@ -28,13 +28,13 @@ module.exports = class extends Generator {
         type: "input",
         name: "displayName",
         message: "What is the display name of your app?",
-        default: "My SaaS App",
+        default: "App",
       },
       {
         type: "input",
         name: "description",
         message: "What is the description of your app?",
-        default: "My SaaS Business Application",
+        default: "Business Application",
       },
       {
         type: "input",
@@ -246,7 +246,7 @@ module.exports = class extends Generator {
     this.log("");
     if (answers.get('customDomain') !== "" && answers.get('BTPRuntime') === 'CF') {
       this.log("Important: The wildcard custom domain route needs be mapped via the following CF CLI command after deployment:");
-      this.log("  cf map-route " + answers.get('projectName') + " " + answers.get('customDomain') + ' --hostname "*"');
+      this.log("  cf map-route " + answers.get('projectName') + "-app " + answers.get('customDomain') + ' --hostname "*"');
       this.log("");
     }
     if (answers.get('routes') && answers.get('BTPRuntime') === 'CF') {
