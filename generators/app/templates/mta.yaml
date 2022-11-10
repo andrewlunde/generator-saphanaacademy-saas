@@ -63,9 +63,9 @@ modules:
       - name: <%= projectName %>-sm
       - name: db_api
         properties:
-          db_api_url: ~{url}
-          db_api_user: ~{user}
-          db_api_password: ~{password}
+          hdi_dynamic_deploy_url: ~{url}
+          hdi_dynamic_deploy_user: ~{user}
+          hdi_dynamic_deploy_password: ~{password}
 <% } -%>
 <% if((routes && BTPRuntime === 'CF') || apiDest){ -%>
       - name: <%= projectName %>-dest

@@ -77,6 +77,63 @@ module.exports = class extends Generator {
       },
       {
         when: response => response.BTPRuntime === "Kyma",
+        type: "input",
+        name: "dockerRepositoryName",
+        message: "What is your Docker repository name? Leave blank to create a separate repository for each microservice.",
+        validate: (s) => {
+          if ((/^[a-z0-9-_]*$/g.test(s) && s.length >= 2 && s.length <= 225) || s === "") {
+            return true;
+          }
+          return "Your Docker repository name must be between 2 and 255 characters long and can only contain numbers, lowercase letters, hyphens (-), and underscores (_).";
+        },
+        default: ""
+      },
+      {
+        when: response => response.BTPRuntime === "Kyma",
+        type: "list",
+        name: "dockerRepositoryVisibility",
+        message: "What is your Docker repository visibility?",
+        choices: [{ name: "Public (Appears in Docker Hub search results)", value: "public" }, { name: "Private (Only visible to you)", value: "private" }],
+        default: "public"
+      },
+      {
+        when: response => response.BTPRuntime === "Kyma" && response.dockerRepositoryVisibility === "private",
+        type: "input",
+        name: "dockerRegistrySecretName",
+        message: "What is the name of your Docker Registry Secret? It will be created in the namespace if you specify your Docker Email Address and Docker Personal Access Token or Password.",
+        default: "docker-registry-config"
+      },
+      {
+        when: response => response.BTPRuntime === "Kyma" && response.dockerRepositoryVisibility === "private",
+        type: "input",
+        name: "dockerServerURL",
+        message: "What is your Docker Server URL?",
+        default: "https://index.docker.io/v1/"
+      },
+      {
+        when: response => response.BTPRuntime === "Kyma" && response.dockerRepositoryVisibility === "private",
+        type: "input",
+        name: "dockerEmailAddress",
+        message: "What is your Docker Email Address? Leave empty if your Docker Registry Secret already exists in the namespace.",
+        default: ""
+      },
+      {
+        when: response => response.BTPRuntime === "Kyma" && response.dockerRepositoryVisibility === "private",
+        type: "password",
+        name: "dockerPassword",
+        message: "What is your Docker Personal Access Token or Password? Leave empty if your Docker Registry Secret already exists in the namespace.",
+        mask: "*",
+        default: ""
+      },
+      {
+        when: response => response.BTPRuntime === "Kyma",
+        type: "input",
+        name: "kubeconfig",
+        message: "What is the path of your Kubeconfig file? Leave blank to use the KUBECONFIG environment variable instead.",
+        default: ""
+      },
+      {
+        when: response => response.BTPRuntime === "Kyma",
         type: "list",
         name: "buildCmd",
         message: "How would you like to build container images?",
@@ -90,7 +147,6 @@ module.exports = class extends Generator {
         default: false,
       },
       {
-        when: response => response.BTPRuntime === "CF",
         type: "confirm",
         name: "hana",
         message: "Would you like to include SAP HANA Cloud persistence (schema separation)?",
@@ -140,7 +196,7 @@ module.exports = class extends Generator {
       {
         type: "confirm",
         name: "buildDeploy",
-        message: "Would you like to build and deploy the project immediately?",
+        message: "Would you like to build and deploy the project?",
         default: false
       },
     ]).then((answers) => {
@@ -152,6 +208,9 @@ module.exports = class extends Generator {
         answers.dockerID = "";
         answers.clusterDomain = "";
         answers.gateway = "";
+        answers.dockerRepositoryName = "";
+        answers.dockerRepositoryVisibility = "";
+        answers.kubeconfig = "";
         answers.buildCmd = "";
       } else {
         if (answers.customDomain !== "") {
@@ -159,7 +218,12 @@ module.exports = class extends Generator {
         } else {
           answers.gateway = "kyma-gateway.kyma-system.svc.cluster.local";
         }
-        answers.hana = false;
+      }
+      if (answers.dockerRepositoryVisibility !== "private") {
+        answers.dockerServerURL = "";
+        answers.dockerEmailAddress = "";
+        answers.dockerPassword = "";
+        answers.dockerRegistrySecretName = "";
       }
       answers.destinationPath = this.destinationPath();
       this.config.set(answers);
@@ -210,6 +274,14 @@ module.exports = class extends Generator {
     let opt = { "cwd": this.destinationPath() };
     if (answers.get('BTPRuntime') === "Kyma") {
       // Kyma runtime
+      let cmd;
+      if (answers.get("dockerRepositoryVisibility") === "private" && !(answers.get("dockerEmailAddress") === "" && answers.get("dockerPassword") === "")) {
+        cmd = ["create", "secret", "docker-registry", answers.get("dockerRegistrySecretName"), "--docker-server", answers.get("dockerServerURL"), "--docker-username", answers.get("dockerID"), "--docker-email", answers.get("dockerEmailAddress"), "--docker-password", answers.get("dockerPassword"), "-n", answers.get("namespace")];
+        if(answers.get("kubeconfig") !== "") {
+          cmd.push("--kubeconfig", answers.get("kubeconfig"));
+        }
+        this.spawnCommandSync("kubectl", cmd, opt);
+      }
       if (answers.get("buildDeploy")) {
         let resPush = this.spawnCommandSync("make", ["docker-push"], opt);
         if (resPush.status === 0) {

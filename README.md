@@ -13,9 +13,9 @@ npm install -g generator-saphanaacademy-saas
 ## SAP BTP, Cloud Foundry runtime
 We assume you have pre-installed [node.js](https://nodejs.org/) and the [Cloud Foundry CLI](https://github.com/cloudfoundry/cli) with the [multiapps](https://github.com/cloudfoundry-incubator/multiapps-cli-plugin) plugin. In order to build the project ensure the [Cloud MTA Build Tool (MBT)](https://sap.github.io/cloud-mta-build-tool/) is installed. This is already the case for SAP Business Application Studio.
 
-If using SAP HANA Cloud ensure you have an instance in the space where you'll be deploying the app.
+If using SAP HANA Cloud ensure you have created an instance and have configured a database mapping to the SAP BTP, Cloud Foundry runtime org and space that you will be deploying to.
 
-Ensure that you are logged in to the Cloud Foundry CLI and are targeting the org and space into which you want to deploy the project.
+Ensure that you are logged in to the SAP BTP, Cloud Foundry runtime CLI and are targeting the org and space into which you want to deploy the app.
 
 To generate your new project:
 ```bash
@@ -32,6 +32,8 @@ In order to build or deploy the project via the Makefile ensure that GNU [Make](
 
 In order to deploy the project ensure that [Helm](https://helm.sh/docs/intro/install) is installed or use a CI/CD pipeline.
 
+If using SAP HANA Cloud ensure you have created an instance and have configured a database mapping to the SAP BTP, Kyma runtime namespace that you will be deploying to.
+
 Ensure that you have set the KUBECONFIG environment variable, have optionally created a namespace into which you would like to deploy the project and are logged in to Docker Hub. For example:
 
 Mac/Linux:
@@ -47,6 +49,8 @@ $ENV:KUBECONFIG="{KUBECONFIG_FILE_PATH}"
 kubectl create ns dev
 docker login
 ```
+
+You can also specify the path to your Kubeconfig file in the generator.
 
 To generate your new project:
 ```bash
@@ -73,6 +77,9 @@ To undeploy your new project from SAP BTP, Kyma runtime:
 cd <projectName>
 make helm-undeploy
 ```
+
+## Important
+Please pay special attention to messages produced by the generator!
 
 ## Video Tutorials
 

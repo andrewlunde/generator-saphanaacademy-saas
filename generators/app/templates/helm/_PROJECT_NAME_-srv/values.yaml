@@ -3,7 +3,7 @@ clusterDomain: <%= clusterDomain %>
 gateway: <%= gateway %>
 <% if(routes){ -%>
 apiRuleGroup: gateway.kyma-project.io
-apiRuleVersion: v1alpha1
+apiRuleVersion: v1beta1
 apiRules: apirules
 <% } -%>
 services:
@@ -14,20 +14,26 @@ services:
   srv:
     name: <%= projectName %>-srv
     image:
+<% if(dockerRepositoryName !== ''){ -%>
+      repository: <%= dockerRepositoryName %>
+      tag: "<%= projectName %>-srv"
+<% } else { -%>
       repository: <%= projectName %>-srv
       tag: "latest"
+<% } -%>
       pullPolicy: Always
-      imagePullSecretName: docker-config
+<% if(dockerRepositoryVisibility === 'private'){ -%>
+      imagePullSecretName: <%= dockerRegistrySecretName %>
+<% } -%>
       port: 5001
     service:
       port: 5001
 <% if(hana){ -%>
   db:
     name: <%= projectName %>-db
+    secretName: <%= projectName %>-db-secret
     service:
       port: 5002
-      user: GHDHSDHSHHDSDSDSDDSDSDSD
-      password: sqdhlqsdfhlkjshlkjdfklYHGHGH565757532
 <% } -%>
   uaa:
     name: <%= projectName %>-uaa

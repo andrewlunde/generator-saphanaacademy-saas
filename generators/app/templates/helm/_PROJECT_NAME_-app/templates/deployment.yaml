@@ -36,8 +36,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ .Values.services.app.name }}
+<% if(dockerRepositoryVisibility === 'private'){ -%>
       imagePullSecrets:
         - name: {{ .Values.services.app.image.imagePullSecretName }}
+<% } -%>
       volumes:
         - name: <%= projectName %>-uaa
           secret:

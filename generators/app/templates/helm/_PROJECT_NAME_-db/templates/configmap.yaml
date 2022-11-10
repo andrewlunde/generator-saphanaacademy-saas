@@ -4,5 +4,3 @@ metadata:
   name: {{ .Values.services.db.name }}
 data:
   PORT: '{{ .Values.services.db.service.port }}'
-  hdi_dynamic_deploy_user: {{ .Values.services.db.service.user }}
-  hdi_dynamic_deploy_password: {{ .Values.services.db.service.password }}

@@ -14,7 +14,5 @@ data:
   appServicePort: '{{ .Values.services.app.service.port }}'
 <% } -%>
 <% if(hana){ -%>
-  db_api_url: https://{{ .Values.services.db.name }}.{{ .Values.clusterDomain }}
-  db_api_user: {{ .Values.services.db.service.user }}
-  db_api_password: {{ .Values.services.db.service.password }}
+  hdi_dynamic_deploy_url: https://{{ .Values.services.db.name }}.{{ .Values.clusterDomain }}
 <% } -%>

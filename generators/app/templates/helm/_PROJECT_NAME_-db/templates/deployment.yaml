@@ -32,3 +32,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ .Values.services.db.name }}
+            - secretRef:
+                name: {{ .Values.services.db.secretName }}
+<% if(dockerRepositoryVisibility === 'private'){ -%>
+      imagePullSecrets:
+        - name: {{ .Values.services.db.image.imagePullSecretName }}
+<% } -%>

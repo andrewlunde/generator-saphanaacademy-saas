@@ -4,14 +4,19 @@ gateway: <%= gateway %>
 services:
   db:
     name: <%= projectName %>-db
-    bindingSecretName: <%= projectName %>-db-binding-secret
+    secretName: <%= projectName %>-db-secret
     image:
+<% if(dockerRepositoryName !== ''){ -%>
+      repository: <%= dockerRepositoryName %>
+      tag: "<%= projectName %>-db"
+<% } else { -%>
       repository: <%= projectName %>-db
       tag: "latest"
+<% } -%>
       pullPolicy: Always
-      imagePullSecretName: docker-config
+<% if(dockerRepositoryVisibility === 'private'){ -%>
+      imagePullSecretName: <%= dockerRegistrySecretName %>
+<% } -%>
       port: 5002
     service:
       port: 5002
-      user: GHDHSDHSHHDSDSDSDDSDSDSD
-      password: sqdhlqsdfhlkjshlkjdfklYHGHGH565757532

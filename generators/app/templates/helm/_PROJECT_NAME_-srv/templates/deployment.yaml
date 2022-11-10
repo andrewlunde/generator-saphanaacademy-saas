@@ -32,6 +32,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ .Values.services.srv.name }}
+<% if(hana){ -%>
+            - secretRef:
+                name: {{ .Values.services.db.secretName }}
+<% } -%>
           volumeMounts:
             - name: <%= projectName %>-uaa
               mountPath: "/etc/secrets/sapcp/xsuaa/<%= projectName %>-uaa"
@@ -49,8 +53,10 @@ spec:
               mountPath: "/etc/secrets/sapcp/destination/<%= projectName %>-dest"
               readOnly: true
 <% } -%>
+<% if(dockerRepositoryVisibility === 'private'){ -%>
       imagePullSecrets:
         - name: {{ .Values.services.srv.image.imagePullSecretName }}
+<% } -%>
       volumes:
         - name: <%= projectName %>-uaa
           secret:

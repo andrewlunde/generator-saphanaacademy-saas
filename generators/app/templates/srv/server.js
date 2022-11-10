@@ -36,6 +36,10 @@ const lib = require('./library');
 
 <% if(hana){ -%>
 const hdbext = require('@sap/hdbext');
+<% if (BTPRuntime === 'Kyma') {-%>
+// avoid inadvertent override of default plan (hdi-shared) in instance manager
+delete services.sm['plan'];
+<% } -%>
 const createInstanceManager = require('@sap/instance-manager').create;
 const axios = require('axios');
 <% } -%>
@@ -78,9 +82,9 @@ app.put('/callback/v1.0/tenants/*', function (req, res) {
                     let options = {
                         method: 'POST',
                         data: instance,
-                        url: process.env.db_api_url + '/v1/deploy/to/instance',
+                        url: process.env.hdi_dynamic_deploy_url + '/v1/deploy/to/instance',
                         headers: {
-                            'Authorization': 'Basic ' + Buffer.from(process.env.db_api_user + ':' + process.env.db_api_password).toString('base64'),
+                            'Authorization': 'Basic ' + Buffer.from(process.env.hdi_dynamic_deploy_user + ':' + process.env.hdi_dynamic_deploy_password).toString('base64'),
                             'Content-Type': 'application/json'
                         }
                     };
