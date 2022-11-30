@@ -11,12 +11,12 @@ spec:
         - config: {}
           handler: noop
       methods:
+        - HEAD
         - GET
         - POST
         - PUT
         - PATCH
         - DELETE
-        - HEAD
   service:
     name: {{ .Values.services.db.name }}
     port: {{ .Values.services.db.service.port }}

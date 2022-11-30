@@ -11,13 +11,18 @@ npm install -g generator-saphanaacademy-saas
 ```
 
 ## SAP BTP, Cloud Foundry runtime
-We assume you have pre-installed [node.js](https://nodejs.org/) and the [Cloud Foundry CLI](https://github.com/cloudfoundry/cli) with the [multiapps](https://github.com/cloudfoundry-incubator/multiapps-cli-plugin) plugin. In order to build the project ensure the [Cloud MTA Build Tool (MBT)](https://sap.github.io/cloud-mta-build-tool/) is installed. This is already the case for SAP Business Application Studio.
+We assume you have pre-installed [node.js](https://nodejs.org/) and the [Cloud Foundry CLI](https://github.com/cloudfoundry/cli) with the [multiapps](https://github.com/cloudfoundry-incubator/multiapps-cli-plugin) plugin.
+
+In order to build the project ensure the [Cloud MTA Build Tool (MBT)](https://sap.github.io/cloud-mta-build-tool/) is installed. 
+
+This is already the case for SAP Business Application Studio.
 
 If using SAP HANA Cloud ensure you have created an instance and have configured a database mapping to the SAP BTP, Cloud Foundry runtime org and space that you will be deploying to.
 
 Ensure that you are logged in to the SAP BTP, Cloud Foundry runtime CLI and are targeting the org and space into which you want to deploy the app.
 
 To generate your new project:
+
 ```bash
 yo saphanaacademy-saas
 ```

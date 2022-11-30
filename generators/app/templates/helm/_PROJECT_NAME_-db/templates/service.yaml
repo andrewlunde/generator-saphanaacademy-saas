@@ -7,9 +7,9 @@ metadata:
     app: {{ .Values.services.db.name }}
 spec:
   ports:
-    - port: {{ .Values.services.db.service.port }}
+    - name: http
+      port: {{ .Values.services.db.service.port }}
       targetPort: {{ .Values.services.db.image.port }}
       protocol: TCP
-      name: http
   selector:
     app: {{ .Values.services.db.name }}

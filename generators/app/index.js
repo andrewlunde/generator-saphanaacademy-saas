@@ -284,7 +284,7 @@ module.exports = class extends Generator {
       }
       if (answers.get("buildDeploy")) {
         let resPush = this.spawnCommandSync("make", ["docker-push"], opt);
-        if (resPush.status === 0) {
+        if (resPush.exitCode === 0) {
           this.spawnCommandSync("make", ["helm-deploy"], opt);
         }
       } else {
@@ -299,7 +299,7 @@ module.exports = class extends Generator {
       var mta = "mta_archives/" + answers.get("projectName") + "_0.0.1.mtar";
       if (answers.get("buildDeploy")) {
         let resBuild = this.spawnCommandSync("mbt", ["build"], opt);
-        if (resBuild.status === 0) {
+        if (resBuild.exitCode === 0) {
           this.spawnCommandSync("cf", ["deploy", mta], opt);
         }
       } else {

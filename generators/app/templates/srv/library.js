@@ -183,12 +183,12 @@ async function createRoute(subscribedSubdomain, appName) {
                             }
                         ],
                         methods: [
+                            'HEAD',
                             'GET',
                             'POST',
                             'PUT',
                             'PATCH',
-                            'DELETE',
-                            'HEAD',
+                            'DELETE'
                         ]
                     }
                 ],

@@ -36,21 +36,24 @@ spec:
             - secretRef:
                 name: {{ .Values.services.db.secretName }}
 <% } -%>
+          env:
+            - name: SERVICE_BINDING_ROOT
+              value: /bindings
           volumeMounts:
             - name: <%= projectName %>-uaa
-              mountPath: "/etc/secrets/sapcp/xsuaa/<%= projectName %>-uaa"
+              mountPath: "/bindings/<%= projectName %>-uaa"
               readOnly: true
             - name: <%= projectName %>-registry
-              mountPath: "/etc/secrets/sapcp/saas-registry/<%= projectName %>-registry"
+              mountPath: "/bindings/<%= projectName %>-registry"
               readOnly: true
 <% if(hana){ -%>
             - name: <%= projectName %>-sm
-              mountPath: "/etc/secrets/sapcp/service-manager/<%= projectName %>-sm"
+              mountPath: "/bindings/<%= projectName %>-sm"
               readOnly: true
 <% } -%>
 <% if(apiDest){ -%>
             - name: <%= projectName %>-dest
-              mountPath: "/etc/secrets/sapcp/destination/<%= projectName %>-dest"
+              mountPath: "/bindings/<%= projectName %>-dest"
               readOnly: true
 <% } -%>
 <% if(dockerRepositoryVisibility === 'private'){ -%>
