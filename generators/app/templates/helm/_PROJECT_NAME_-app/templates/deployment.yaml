@@ -29,9 +29,12 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.services.app.image.port }}
+          env:
+            - name: SERVICE_BINDING_ROOT
+              value: /bindings
           volumeMounts:
             - name: <%= projectName %>-uaa
-              mountPath: "/etc/secrets/sapcp/xsuaa/<%= projectName %>-uaa"
+              mountPath: "/bindings/<%= projectName %>-uaa"
               readOnly: true
           envFrom:
             - configMapRef:
