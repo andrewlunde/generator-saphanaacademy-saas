@@ -2,7 +2,7 @@
   "name": "generator-saphanaacademy-saas",
   "displayName": "SAP HANA Academy SaaS",
   "description": "Yeoman Generator to jump-start BTP Multitenant SaaS Apps",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://www.youtube.com/playlist?list=PLkzo92owKnVx3Sh0nemX8GoSNzJGfsWJM",
   "author": {
@@ -52,6 +52,8 @@
   },
   "dependencies": {
     "chalk": "^5.1",
+    "generate-password": "^1.7",
+    "@kubernetes/client-node": "^0.17",
     "yeoman-generator": "^5.7",
     "yosay": "^2.0"
   },

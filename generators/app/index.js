@@ -194,6 +194,14 @@ module.exports = class extends Generator {
         default: false,
       },
       {
+        when: response => response.BTPRuntime === "Kyma",
+        type: "confirm",
+        name: "externalSessionManagement",
+        message: "Would you like to configure external session management (using Redis)?",
+        default: false
+      },
+
+      {
         type: "confirm",
         name: "buildDeploy",
         message: "Would you like to build and deploy the project?",
@@ -212,6 +220,7 @@ module.exports = class extends Generator {
         answers.dockerRepositoryVisibility = "";
         answers.kubeconfig = "";
         answers.buildCmd = "";
+        answers.externalSessionManagement = false;
       } else {
         if (answers.customDomain !== "") {
           answers.clusterDomain = answers.customDomain;
@@ -249,14 +258,16 @@ module.exports = class extends Generator {
                   if (!((file.includes('role.yaml') || file.includes('binding-role.yaml')) && answers.get('routes') === false)) {
                     if (!((file.includes('service-sm.yaml') || file.includes('binding-sm.yaml')) && answers.get('hana') === false)) {
                       if (!((file.includes('service-dest.yaml') || file.includes('binding-dest.yaml')) && answers.get('apiDest') === false)) {
-                        if (!((file === 'mta.yaml' || file === 'xs-security.json') && answers.get('BTPRuntime') !== 'CF')) {
-                          const sOrigin = this.templatePath(file);
-                          let fileDest = file;
-                          fileDest = fileDest.replace('_PROJECT_NAME_', answers.get('projectName'));
-                          fileDest = fileDest.replace('dotgitignore', '.gitignore');
-                          fileDest = fileDest.replace('dotdockerignore', '.dockerignore');
-                          const sTarget = this.destinationPath(fileDest);
-                          this.fs.copyTpl(sOrigin, sTarget, answers.getAll());
+                        if (!((file.includes('-redis.yaml') || file.includes('destinationrule.yaml')) && answers.get('externalSessionManagement') === false)) {
+                          if (!((file === 'mta.yaml' || file === 'xs-security.json') && answers.get('BTPRuntime') !== 'CF')) {
+                            const sOrigin = this.templatePath(file);
+                            let fileDest = file;
+                            fileDest = fileDest.replace('_PROJECT_NAME_', answers.get('projectName'));
+                            fileDest = fileDest.replace('dotgitignore', '.gitignore');
+                            fileDest = fileDest.replace('dotdockerignore', '.dockerignore');
+                            const sTarget = this.destinationPath(fileDest);
+                            this.fs.copyTpl(sOrigin, sTarget, answers.getAll());
+                          }
                         }
                       }
                     }
@@ -269,7 +280,7 @@ module.exports = class extends Generator {
       });
   }
 
-  install() {
+  async install() {
     var answers = this.config;
     let opt = { "cwd": this.destinationPath() };
     if (answers.get('BTPRuntime') === "Kyma") {
@@ -277,10 +288,56 @@ module.exports = class extends Generator {
       let cmd;
       if (answers.get("dockerRepositoryVisibility") === "private" && !(answers.get("dockerEmailAddress") === "" && answers.get("dockerPassword") === "")) {
         cmd = ["create", "secret", "docker-registry", answers.get("dockerRegistrySecretName"), "--docker-server", answers.get("dockerServerURL"), "--docker-username", answers.get("dockerID"), "--docker-email", answers.get("dockerEmailAddress"), "--docker-password", answers.get("dockerPassword"), "-n", answers.get("namespace")];
-        if(answers.get("kubeconfig") !== "") {
+        if (answers.get("kubeconfig") !== "") {
           cmd.push("--kubeconfig", answers.get("kubeconfig"));
         }
         this.spawnCommandSync("kubectl", cmd, opt);
+      }
+      if (answers.get("externalSessionManagement") === true) {
+        // generate secret
+        const k8s = require('@kubernetes/client-node');
+        const kc = new k8s.KubeConfig();
+        kc.loadFromDefault();
+        let k8sApi = kc.makeApiClient(k8s.CoreV1Api);
+        this.log('Creating the external session management secret...');
+        let pwdgen = require('generate-password');
+        let redisPassword = pwdgen.generate({
+          length: 64,
+          numbers: true
+        });
+        let sessionSecret = pwdgen.generate({
+          length: 64,
+          numbers: true
+        });
+        let k8sSecret = {
+          apiVersion: 'v1',
+          kind: 'Secret',
+          metadata: {
+            name: answers.get('projectName') + '-redis-binding-secret',
+            labels: {
+              'app.kubernetes.io/managed-by': answers.get('projectName') + '-app'
+            }
+          },
+          type: 'Opaque',
+          data: {
+            EXT_SESSION_MGT: Buffer.from('{"instanceName":"' + answers.get("projectName") + '-redis", "storageType":"redis", "sessionSecret": "' + sessionSecret + '"}', 'utf-8').toString('base64'),
+            REDIS_PASSWORD: Buffer.from('"' + redisPassword + '"', 'utf-8').toString('base64'),
+            ".metadata": Buffer.from('{"credentialProperties":[{"name":"hostname","format":"text"},{"name":"port","format":"text"},{"name":"password","format":"text"},{"name":"cluster_mode","format":"text"},{"name":"tls","format":"text"}],"metaDataProperties":[{"name":"instance_name","format":"text"},{"name":"type","format":"text"},{"name":"label","format":"text"}]}', 'utf-8').toString('base64'),
+            instance_name: Buffer.from(answers.get('projectName') + '-db-' + answers.get('schemaName'), 'utf-8').toString('base64'),
+            type: Buffer.from("redis", 'utf-8').toString('base64'),
+            name: Buffer.from(answers.get("projectName") + "-redis", 'utf-8').toString('base64'),
+            instance_name: Buffer.from(answers.get("projectName") + "-redis", 'utf-8').toString('base64'),
+            hostname: Buffer.from(answers.get("projectName") + "-redis", 'utf-8').toString('base64'),
+            port: Buffer.from("6379", 'utf-8').toString('base64'),
+            password: Buffer.from(redisPassword, 'utf-8').toString('base64'),
+            cluster_mode: Buffer.from("false", 'utf-8').toString('base64'),
+            tls: Buffer.from("false", 'utf-8').toString('base64')
+          }
+        };
+        await k8sApi.createNamespacedSecret(
+          answers.get('namespace'),
+          k8sSecret
+        ).catch(e => this.log("createNamespacedSecret:", e.response.body));
       }
       if (answers.get("buildDeploy")) {
         let resPush = this.spawnCommandSync("make", ["docker-push"], opt);

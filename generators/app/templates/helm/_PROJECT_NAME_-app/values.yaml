@@ -27,3 +27,10 @@ services:
     name: <%= projectName %>-uaa
     bindingName: <%= projectName %>-uaa-binding
     bindingSecretName: <%= projectName %>-uaa-binding-secret
+<% if(externalSessionManagement){ -%>
+  redis:
+    name: <%= projectName %>-redis
+    bindingSecretName: <%= projectName %>-redis-binding-secret
+    service:
+      port: 6379
+<% } -%>
