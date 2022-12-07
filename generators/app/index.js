@@ -4,6 +4,10 @@ const path = require("path");
 const glob = require("glob");
 
 module.exports = class extends Generator {
+  initializing() {
+    process.chdir(this.destinationRoot());
+  }
+
   prompting() {
     return this.prompt([
       {
