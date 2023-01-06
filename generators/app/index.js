@@ -8,8 +8,36 @@ module.exports = class extends Generator {
     process.chdir(this.destinationRoot());
   }
 
-  prompting() {
-    return this.prompt([
+  async prompting() {
+    // defaults
+    const answers = {};
+    answers.projectName = "app";
+    answers.newDir = true;
+    answers.displayName = "App";
+    answers.description = "Business Application";
+    answers.category = "SaaS Multitenant Apps";
+    answers.BTPRuntime = "CF";
+    answers.namespace = "default";
+    answers.dockerID = "";
+    answers.dockerRepositoryName = "";
+    answers.dockerRepositoryVisibility = "public";
+    answers.dockerRegistrySecretName = "docker-registry-config";
+    answers.dockerServerURL = "https://index.docker.io/v1/";
+    answers.dockerEmailAddress = "";
+    answers.dockerPassword = "";
+    answers.kubeconfig = "";
+    answers.buildCmd = "pack";
+    answers.SaaSAPI = false;
+    answers.hana = false;
+    answers.customDomain = "";
+    answers.clusterDomain = "0000000.kyma.ondemand.com";
+    answers.gateway = "kyma-gateway.kyma-system.svc.cluster.local";
+    answers.routes = true;
+    answers.apiDest = false;
+    answers.externalSessionManagement = false;
+    answers.buildDeploy = false;
+    // prompts
+    const answers1 = await this.prompt([
       {
         type: "input",
         name: "projectName",
@@ -20,38 +48,38 @@ module.exports = class extends Generator {
           }
           return "Please only use alphanumeric characters for the project name.";
         },
-        default: "app",
+        default: answers.projectName
       },
       {
         type: "confirm",
         name: "newDir",
         message: "Would you like to create a new directory for this project?",
-        default: true,
+        default: answers.newDir
       },
       {
         type: "input",
         name: "displayName",
         message: "What is the display name of your app?",
-        default: "App",
+        default: answers.displayName
       },
       {
         type: "input",
         name: "description",
         message: "What is the description of your app?",
-        default: "Business Application",
+        default: answers.description
       },
       {
         type: "input",
         name: "category",
         message: "What is the category of your app?",
-        default: "SaaS Multitenant Apps"
+        default: answers.category
       },
       {
         type: "list",
         name: "BTPRuntime",
         message: "Which runtime will you be deploying the project to?",
         choices: [{ name: "SAP BTP, Cloud Foundry runtime", value: "CF" }, { name: "SAP BTP, Kyma runtime", value: "Kyma" }],
-        default: "CF"
+        default: answers.BTPRuntime
       },
       {
         when: response => response.BTPRuntime === "Kyma",
@@ -64,7 +92,7 @@ module.exports = class extends Generator {
           }
           return "Your SAP BTP, Kyma runtime namespace can only contain lowercase alphanumeric characters or -.";
         },
-        default: "default"
+        default: answers.namespace
       },
       {
         when: response => response.BTPRuntime === "Kyma",
@@ -77,7 +105,7 @@ module.exports = class extends Generator {
           }
           return "Your Docker ID must be between 4 and 30 characters long and can only contain numbers and lowercase letters.";
         },
-        default: ""
+        default: answers.dockerID
       },
       {
         when: response => response.BTPRuntime === "Kyma",
@@ -90,7 +118,7 @@ module.exports = class extends Generator {
           }
           return "Your Docker repository name must be between 2 and 255 characters long and can only contain numbers, lowercase letters, hyphens (-), and underscores (_).";
         },
-        default: ""
+        default: answers.dockerRepositoryName
       },
       {
         when: response => response.BTPRuntime === "Kyma",
@@ -98,28 +126,28 @@ module.exports = class extends Generator {
         name: "dockerRepositoryVisibility",
         message: "What is your Docker repository visibility?",
         choices: [{ name: "Public (Appears in Docker Hub search results)", value: "public" }, { name: "Private (Only visible to you)", value: "private" }],
-        default: "public"
+        default: answers.dockerRepositoryVisibility
       },
       {
         when: response => response.BTPRuntime === "Kyma" && response.dockerRepositoryVisibility === "private",
         type: "input",
         name: "dockerRegistrySecretName",
         message: "What is the name of your Docker Registry Secret? It will be created in the namespace if you specify your Docker Email Address and Docker Personal Access Token or Password.",
-        default: "docker-registry-config"
+        default: answers.dockerRegistrySecretName
       },
       {
         when: response => response.BTPRuntime === "Kyma" && response.dockerRepositoryVisibility === "private",
         type: "input",
         name: "dockerServerURL",
         message: "What is your Docker Server URL?",
-        default: "https://index.docker.io/v1/"
+        default: answers.dockerServerURL
       },
       {
         when: response => response.BTPRuntime === "Kyma" && response.dockerRepositoryVisibility === "private",
         type: "input",
         name: "dockerEmailAddress",
         message: "What is your Docker Email Address? Leave empty if your Docker Registry Secret already exists in the namespace.",
-        default: ""
+        default: answers.dockerEmailAddress
       },
       {
         when: response => response.BTPRuntime === "Kyma" && response.dockerRepositoryVisibility === "private",
@@ -127,14 +155,14 @@ module.exports = class extends Generator {
         name: "dockerPassword",
         message: "What is your Docker Personal Access Token or Password? Leave empty if your Docker Registry Secret already exists in the namespace.",
         mask: "*",
-        default: ""
+        default: answers.dockerPassword
       },
       {
         when: response => response.BTPRuntime === "Kyma",
         type: "input",
         name: "kubeconfig",
         message: "What is the path of your Kubeconfig file? Leave blank to use the KUBECONFIG environment variable instead.",
-        default: ""
+        default: answers.kubeconfig
       },
       {
         when: response => response.BTPRuntime === "Kyma",
@@ -142,24 +170,24 @@ module.exports = class extends Generator {
         name: "buildCmd",
         message: "How would you like to build container images?",
         choices: [{ name: "Paketo (Cloud Native Buildpacks)", value: "pack" }, { name: "Docker", value: "docker" }, { name: "Podman", value: "podman" }],
-        default: "pack"
+        default: answers.buildCmd
       },
       {
         type: "confirm",
         name: "SaaSAPI",
         message: "Would you like to include an example of using the SaaS API (view subscriptions)?",
-        default: false,
+        default: answers.SaaSAPI
       },
       {
         type: "confirm",
         name: "hana",
-        message: "Would you like to include SAP HANA Cloud persistence (schema separation)?",
-        default: false,
+        message: "Would you like to use SAP HANA Cloud?",
+        default: answers.hana
       },
       {
         type: "input",
         name: "customDomain",
-        message: "Will you be using a wildcard custom domain (eg: app.domain.com)? If so please enter it here - or simply press enter for none.",
+        message: "Will you be using a wildcard custom domain (eg: apps.domain.com)? If so please enter the custom domain name here. Leave blank to use the platform default.",
         validate: (s) => {
           if (s === "") {
             return true;
@@ -169,78 +197,70 @@ module.exports = class extends Generator {
           }
           return "Please only use alphanumeric characters for the custom domain.";
         },
-        default: "",
-      },
+        default: answers.customDomain
+      }
+    ]);
+    if (answers1.BTPRuntime === "Kyma" && answers1.customDomain === "") {
+      let cmd = ["get", "cm", "shoot-info", "-n", "kube-system", "-o", "jsonpath='{.data.domain}'"];
+      if (answers1.kubeconfig !== "") {
+        cmd.push("--kubeconfig", answers1.kubeconfig);
+      }
+      let opt = { "cwd": answers1.destinationPath, "stdio": [process.stdout] };
+      let resGet = this.spawnCommandSync("kubectl", cmd, opt);
+      if (resGet.exitCode === 0) {
+        answers.clusterDomain = resGet.stdout.toString().replace(/'/g, '');
+      }
+    } else {
+      answers.clusterDomain = answers1.customDomain;
+    }
+    const answers2 = await this.prompt([
       {
-        when: response => response.BTPRuntime === "Kyma" && response.customDomain === "",
+        when: answers1.BTPRuntime === "Kyma" && answers1.customDomain === "",
         type: "input",
         name: "clusterDomain",
         message: "What is the cluster domain of your SAP BTP, Kyma runtime?",
-        default: "0000000.kyma.ondemand.com"
+        default: answers.clusterDomain
       },
       {
-        when: response => response.BTPRuntime === "Kyma" && response.customDomain !== "",
+        when: answers1.BTPRuntime === "Kyma" && answers1.customDomain !== "",
         type: "input",
         name: "gateway",
         message: "What is the gateway for the custom domain in your SAP BTP, Kyma runtime?",
-        default: "gateway-name.namespace.svc.cluster.local"
+        default: answers.gateway
       },
       {
         type: "confirm",
         name: "routes",
         message: "Would you like to include creation/deletion of tenant routes (CF) or API Rules (Kyma) / on subscribe/unsubscribe?",
-        default: true,
+        default: answers.routes
       },
       {
         type: "confirm",
         name: "apiDest",
         message: "Would you like to include an example of using the destination reuse service?",
-        default: false,
+        default: answers.apiDest
       },
       {
-        when: response => response.BTPRuntime === "Kyma",
+        when: answers1.BTPRuntime === "Kyma",
         type: "confirm",
         name: "externalSessionManagement",
         message: "Would you like to configure external session management (using Redis)?",
-        default: false
+        default: answers.externalSessionManagement
       },
-
       {
         type: "confirm",
         name: "buildDeploy",
         message: "Would you like to build and deploy the project?",
-        default: false
-      },
-    ]).then((answers) => {
-      if (answers.newDir) {
-        this.destinationRoot(`${answers.projectName}`);
+        default: answers.buildDeploy
       }
-      if (answers.BTPRuntime !== "Kyma") {
-        answers.namespace = "";
-        answers.dockerID = "";
-        answers.clusterDomain = "";
-        answers.gateway = "";
-        answers.dockerRepositoryName = "";
-        answers.dockerRepositoryVisibility = "";
-        answers.kubeconfig = "";
-        answers.buildCmd = "";
-        answers.externalSessionManagement = false;
-      } else {
-        if (answers.customDomain !== "") {
-          answers.clusterDomain = answers.customDomain;
-        } else {
-          answers.gateway = "kyma-gateway.kyma-system.svc.cluster.local";
-        }
-      }
-      if (answers.dockerRepositoryVisibility !== "private") {
-        answers.dockerServerURL = "";
-        answers.dockerEmailAddress = "";
-        answers.dockerPassword = "";
-        answers.dockerRegistrySecretName = "";
-      }
-      answers.destinationPath = this.destinationPath();
-      this.config.set(answers);
-    });
+    ]);
+    if (answers1.newDir) {
+      this.destinationRoot(`${answers1.projectName}`);
+    }
+    answers.destinationPath = this.destinationPath();
+    this.config.set(answers);
+    this.config.set(answers1);
+    this.config.set(answers2);
   }
 
   writing() {
