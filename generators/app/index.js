@@ -2,8 +2,33 @@
 const Generator = require("yeoman-generator");
 const path = require("path");
 const glob = require("glob");
+const types = require("@sap-devx/yeoman-ui-types");
 
 module.exports = class extends Generator {
+  constructor(args, opts) {
+    super(args, opts);
+    this.setPromptsCallback = (fn) => {
+      if (this.prompts) {
+        this.prompts.setCallback(fn);
+      }
+    };
+    const virtualPrompts = [
+      {
+        name: "Project Attributes",
+        description: "Configure the main project attributes."
+      },
+      {
+        name: "Runtime Selection",
+        description: "Choose and configure your runtime."
+      },
+      {
+        name: "Additional Attributes",
+        description: "Configure additional attributes."
+      }
+    ];
+    this.prompts = new types.Prompts(virtualPrompts);
+  }
+
   initializing() {
     process.chdir(this.destinationRoot());
   }
@@ -37,7 +62,7 @@ module.exports = class extends Generator {
     answers.externalSessionManagement = false;
     answers.buildDeploy = false;
     // prompts
-    const answers1 = await this.prompt([
+    const answersProject = await this.prompt([
       {
         type: "input",
         name: "projectName",
@@ -73,12 +98,15 @@ module.exports = class extends Generator {
         name: "category",
         message: "What is the category of your app?",
         default: answers.category
-      },
+      }
+    ]);
+    const answersRuntime = await this.prompt([
       {
         type: "list",
         name: "BTPRuntime",
         message: "Which runtime will you be deploying the project to?",
         choices: [{ name: "SAP BTP, Cloud Foundry runtime", value: "CF" }, { name: "SAP BTP, Kyma runtime", value: "Kyma" }],
+        store: true,
         default: answers.BTPRuntime
       },
       {
@@ -92,6 +120,7 @@ module.exports = class extends Generator {
           }
           return "Your SAP BTP, Kyma runtime namespace can only contain lowercase alphanumeric characters or -.";
         },
+        store: true,
         default: answers.namespace
       },
       {
@@ -105,6 +134,7 @@ module.exports = class extends Generator {
           }
           return "Your Docker ID must be between 4 and 30 characters long and can only contain numbers and lowercase letters.";
         },
+        store: true,
         default: answers.dockerID
       },
       {
@@ -126,6 +156,7 @@ module.exports = class extends Generator {
         name: "dockerRepositoryVisibility",
         message: "What is your Docker repository visibility?",
         choices: [{ name: "Public (Appears in Docker Hub search results)", value: "public" }, { name: "Private (Only visible to you)", value: "private" }],
+        store: true,
         default: answers.dockerRepositoryVisibility
       },
       {
@@ -133,6 +164,7 @@ module.exports = class extends Generator {
         type: "input",
         name: "dockerRegistrySecretName",
         message: "What is the name of your Docker Registry Secret? It will be created in the namespace if you specify your Docker Email Address and Docker Personal Access Token or Password.",
+        store: true,
         default: answers.dockerRegistrySecretName
       },
       {
@@ -140,20 +172,21 @@ module.exports = class extends Generator {
         type: "input",
         name: "dockerServerURL",
         message: "What is your Docker Server URL?",
+        store: true,
         default: answers.dockerServerURL
       },
       {
         when: response => response.BTPRuntime === "Kyma" && response.dockerRepositoryVisibility === "private",
         type: "input",
         name: "dockerEmailAddress",
-        message: "What is your Docker Email Address? Leave empty if your Docker Registry Secret already exists in the namespace.",
+        message: "What is your Docker Email Address? Leave blank if your Docker Registry Secret already exists in the namespace.",
         default: answers.dockerEmailAddress
       },
       {
         when: response => response.BTPRuntime === "Kyma" && response.dockerRepositoryVisibility === "private",
         type: "password",
         name: "dockerPassword",
-        message: "What is your Docker Personal Access Token or Password? Leave empty if your Docker Registry Secret already exists in the namespace.",
+        message: "What is your Docker Personal Access Token or Password? Leave blank if your Docker Registry Secret already exists in the namespace.",
         mask: "*",
         default: answers.dockerPassword
       },
@@ -170,19 +203,8 @@ module.exports = class extends Generator {
         name: "buildCmd",
         message: "How would you like to build container images?",
         choices: [{ name: "Paketo (Cloud Native Buildpacks)", value: "pack" }, { name: "Docker", value: "docker" }, { name: "Podman", value: "podman" }],
+        store: true,
         default: answers.buildCmd
-      },
-      {
-        type: "confirm",
-        name: "SaaSAPI",
-        message: "Would you like to include an example of using the SaaS API (view subscriptions)?",
-        default: answers.SaaSAPI
-      },
-      {
-        type: "confirm",
-        name: "hana",
-        message: "Would you like to use SAP HANA Cloud?",
-        default: answers.hana
       },
       {
         type: "input",
@@ -200,33 +222,49 @@ module.exports = class extends Generator {
         default: answers.customDomain
       }
     ]);
-    if (answers1.BTPRuntime === "Kyma" && answers1.customDomain === "") {
+    if (answersRuntime.BTPRuntime === "Kyma" && answersRuntime.customDomain === "") {
       let cmd = ["get", "cm", "shoot-info", "-n", "kube-system", "-o", "jsonpath='{.data.domain}'"];
-      if (answers1.kubeconfig !== "") {
-        cmd.push("--kubeconfig", answers1.kubeconfig);
+      if (answersRuntime.kubeconfig !== "") {
+        cmd.push("--kubeconfig", answersRuntime.kubeconfig);
       }
-      let opt = { "cwd": answers1.destinationPath, "stdio": [process.stdout] };
-      let resGet = this.spawnCommandSync("kubectl", cmd, opt);
-      if (resGet.exitCode === 0) {
-        answers.clusterDomain = resGet.stdout.toString().replace(/'/g, '');
+      let opt = { "stdio": [process.stdout] };
+      try {
+        let resGet = this.spawnCommandSync("kubectl", cmd, opt);
+        if (resGet.exitCode === 0) {
+          answers.clusterDomain = resGet.stdout.toString().replace(/'/g, '');
+        }
+      } catch (error) {
+        this.log("kubectl:", error);
       }
     } else {
-      answers.clusterDomain = answers1.customDomain;
+      answers.clusterDomain = answersRuntime.customDomain;
     }
-    const answers2 = await this.prompt([
+    const answersAdditional = await this.prompt([
       {
-        when: answers1.BTPRuntime === "Kyma" && answers1.customDomain === "",
+        when: answersRuntime.BTPRuntime === "Kyma" && answersRuntime.customDomain === "",
         type: "input",
         name: "clusterDomain",
         message: "What is the cluster domain of your SAP BTP, Kyma runtime?",
         default: answers.clusterDomain
       },
       {
-        when: answers1.BTPRuntime === "Kyma" && answers1.customDomain !== "",
+        when: answersRuntime.BTPRuntime === "Kyma" && answersRuntime.customDomain !== "",
         type: "input",
         name: "gateway",
         message: "What is the gateway for the custom domain in your SAP BTP, Kyma runtime?",
         default: answers.gateway
+      },
+      {
+        type: "confirm",
+        name: "SaaSAPI",
+        message: "Would you like to include an example of using the SaaS API (view subscriptions)?",
+        default: answers.SaaSAPI
+      },
+      {
+        type: "confirm",
+        name: "hana",
+        message: "Would you like to use SAP HANA Cloud?",
+        default: answers.hana
       },
       {
         type: "confirm",
@@ -241,7 +279,7 @@ module.exports = class extends Generator {
         default: answers.apiDest
       },
       {
-        when: answers1.BTPRuntime === "Kyma",
+        when: answersRuntime.BTPRuntime === "Kyma",
         type: "confirm",
         name: "externalSessionManagement",
         message: "Would you like to configure external session management (using Redis)?",
@@ -254,13 +292,14 @@ module.exports = class extends Generator {
         default: answers.buildDeploy
       }
     ]);
-    if (answers1.newDir) {
-      this.destinationRoot(`${answers1.projectName}`);
+    if (answersProject.newDir) {
+      this.destinationRoot(`${answersProject.projectName}`);
     }
     answers.destinationPath = this.destinationPath();
     this.config.set(answers);
-    this.config.set(answers1);
-    this.config.set(answers2);
+    this.config.set(answersProject);
+    this.config.set(answersRuntime);
+    this.config.set(answersAdditional);
   }
 
   writing() {
@@ -397,7 +436,6 @@ module.exports = class extends Generator {
 
   end() {
     var answers = this.config;
-    var opt = { "cwd": answers.get("destinationPath") };
     this.log("");
     if (answers.get('customDomain') !== "" && answers.get('BTPRuntime') === 'CF') {
       this.log("Important: The wildcard custom domain route needs be mapped via the following CF CLI command after deployment:");
