@@ -8,15 +8,19 @@
             "scope": "$XSAPPNAME.User",
             "destination": "srv"
         },
-        <% if(sqlite){ -%>
-{
+<% if(sqlite){ -%>
+        {
             "source": "^/sqlite/(.*)$",
+<% if(providerSubdomain == "unknown"){ -%>
             "authenticationType": "xsuaa",
             "scope": "$XSAPPNAME.User",
+<% } else { -%>
+            "authenticationType": "none",
+<% } -%>
             "destination": "sqlite"
         },
-        <% } -%>
-{
+<% } -%>
+        {
             "source": "^/(.*)",
             "authenticationType": "none",
             "localDir": "resources"
