@@ -41,6 +41,7 @@ module.exports = class extends Generator {
     answers.displayName = "App";
     answers.description = "Business Application";
     answers.category = "SaaS Multitenant Apps";
+    answers.providerSubdomain = "Found-in-Subaccount-Overview";
     answers.BTPRuntime = "CF";
     answers.namespace = "default";
     answers.dockerID = "";
@@ -54,6 +55,7 @@ module.exports = class extends Generator {
     answers.buildCmd = "pack";
     answers.SaaSAPI = false;
     answers.hana = false;
+    answers.sqlite = false;
     answers.customDomain = "";
     answers.clusterDomain = "0000000.kyma.ondemand.com";
     answers.gateway = "kyma-gateway.kyma-system.svc.cluster.local";
@@ -296,6 +298,17 @@ module.exports = class extends Generator {
       this.destinationRoot(`${answersProject.projectName}`);
     }
     answers.destinationPath = this.destinationPath();
+    this.log(this.options);
+    this.log(this.options.db);
+    if ((this.options.db) && (this.options.db == "sqlite")) {  // passing --db=sqlite on the command line
+      answers.sqlite = true;
+    }
+    this.log(this.options.subdomain);
+    if (this.options.subdomain) {  // passing --subdomain=cryptorates on the command line
+      answers.providerSubdomain = this.options.subdomain;
+    } else {
+      answers.providerSubdomain = "unknown";
+    }
     this.config.set(answers);
     this.config.set(answersProject);
     this.config.set(answersRuntime);
