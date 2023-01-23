@@ -6,6 +6,13 @@ data:
   TENANT_HOST_PATTERN: "^(.*)-{{ .Values.services.app.name }}.{{ .Values.clusterDomain }}"
   destinations: |
     [
+<% if(sqlite){ -%>
+      {
+        "name": "sqlite",
+        "url": "http://{{ .Values.services.sqlite.name }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.services.sqlite.service.port }}",
+        "forwardAuthToken": true
+      },
+<% } -%>
       {
         "name": "srv",
         "url": "http://{{ .Values.services.srv.name }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.services.srv.service.port }}",

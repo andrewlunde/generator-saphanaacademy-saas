@@ -1,0 +1,36 @@
+{
+    "name": "<%= projectName %>-sqlite",
+    "dependencies": {
+        "express": "latest",
+<% if(hana){ %>
+        "@sap/hdbext": "latest",
+        "@sap/instance-manager": "latest",
+<% } %>
+<% if((routes && BTPRuntime === 'Kyma') || hana){ %>
+        "axios": "latest",
+<% } %>
+<% if(routes && BTPRuntime === 'Kyma'){ %>
+        "@kubernetes/client-node": "latest",
+<% } %>
+<% if((routes && BTPRuntime === 'CF') || SaaSAPI || apiDest){ %>
+        "@sap-cloud-sdk/http-client": "latest",
+<% } %>
+<% if(apiDest){ %>
+        "@sap-cloud-sdk/connectivity": "latest",
+<% } %>
+<% if(BTPRuntime === 'CF' && routes){ -%>
+        "cfenv": "latest",
+<% } -%>
+        "@sap/xsenv": "latest",
+        "@sap/xssec": "latest",
+        "passport": "latest",
+        "nodemon": "latest",
+<% if(sqlite){ %>
+        "better-sqlite3": "latest",
+<% } %>
+        "nunjucks": "latest"
+    },
+    "scripts": {
+        "start": "node server.js"
+    }
+}

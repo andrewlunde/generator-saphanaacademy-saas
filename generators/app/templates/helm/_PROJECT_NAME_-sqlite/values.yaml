@@ -1,29 +1,40 @@
 dockerID: <%= dockerID %>
-providerSubdomain: <%= providerSubdomain %>
 clusterDomain: <%= clusterDomain %>
 gateway: <%= gateway %>
+<% if(routes){ -%>
+apiRuleGroup: gateway.kyma-project.io
+apiRuleVersion: v1beta1
+apiRules: apirules
+<% } -%>
 services:
   app:
     name: <%= projectName %>-app
+    service:
+      port: 5000
+  srv:
+    name: <%= projectName %>-srv
     image:
 <% if(dockerRepositoryName !== ''){ -%>
       repository: <%= dockerRepositoryName %>
-      tag: "<%= projectName %>-app"
+      tag: "<%= projectName %>-srv"
 <% } else { -%>
-      repository: <%= projectName %>-app
+      repository: <%= projectName %>-srv
       tag: "latest"
 <% } -%>
       pullPolicy: Always
 <% if(dockerRepositoryVisibility === 'private'){ -%>
       imagePullSecretName: <%= dockerRegistrySecretName %>
 <% } -%>
-      port: 5000
-    service:
-      port: 5000
-  srv:
-    name: <%= projectName %>-srv
+      port: 5001
     service:
       port: 5001
+<% if(hana){ -%>
+  db:
+    name: <%= projectName %>-db
+    secretName: <%= projectName %>-db-secret
+    service:
+      port: 5002
+<% } -%>
 <% if(sqlite){ -%>
   sqlite:
     name: <%= projectName %>-sqlite
@@ -45,12 +56,27 @@ services:
 <% } -%>
   uaa:
     name: <%= projectName %>-uaa
+    xsappname: <%= projectName %>
     bindingName: <%= projectName %>-uaa-binding
     bindingSecretName: <%= projectName %>-uaa-binding-secret
-<% if(externalSessionManagement){ -%>
-  redis:
-    name: <%= projectName %>-redis
-    bindingSecretName: <%= projectName %>-redis-binding-secret
-    service:
-      port: 6379
+  registry:
+    name: <%= projectName %>-registry
+    bindingName: <%= projectName %>-registry-binding
+    bindingSecretName: <%= projectName %>-registry-binding-secret
+<% if(routes){ -%>
+  role:
+    name: <%= projectName %>-role
+    bindingName: <%= projectName %>-role-binding
+<% } -%>
+<% if(hana){ -%>
+  sm:
+    name: <%= projectName %>-sm
+    bindingName: <%= projectName %>-sm-binding
+    bindingSecretName: <%= projectName %>-sm-binding-secret
+<% } -%>
+<% if(apiDest){ -%>
+  dest:
+    name: <%= projectName %>-dest
+    bindingName: <%= projectName %>-dest-binding
+    bindingSecretName: <%= projectName %>-dest-binding-secret
 <% } -%>

@@ -35,6 +35,25 @@ services:
     service:
       port: 5002
 <% } -%>
+<% if(sqlite){ -%>
+  sqlite:
+    name: <%= projectName %>-sqlite
+    image:
+<% if(dockerRepositoryName !== ''){ -%>
+      repository: <%= dockerRepositoryName %>
+      tag: "<%= projectName %>-sqlite"
+<% } else { -%>
+      repository: <%= projectName %>-sqlite
+      tag: "latest"
+<% } -%>
+      pullPolicy: Always
+<% if(dockerRepositoryVisibility === 'private'){ -%>
+      imagePullSecretName: <%= dockerRegistrySecretName %>
+<% } -%>
+      port: 5003
+    service:
+      port: 5003
+<% } -%>
   uaa:
     name: <%= projectName %>-uaa
     xsappname: <%= projectName %>

@@ -298,12 +298,12 @@ module.exports = class extends Generator {
       this.destinationRoot(`${answersProject.projectName}`);
     }
     answers.destinationPath = this.destinationPath();
-    this.log(this.options);
-    this.log(this.options.db);
+    //this.log(this.options);
+    //this.log(this.options.db);
     if ((this.options.db) && (this.options.db == "sqlite")) {  // passing --db=sqlite on the command line
       answers.sqlite = true;
     }
-    this.log(this.options.subdomain);
+    //this.log(this.options.subdomain);
     if (this.options.subdomain) {  // passing --subdomain=cryptorates on the command line
       answers.providerSubdomain = this.options.subdomain;
     } else {
@@ -328,21 +328,27 @@ module.exports = class extends Generator {
       .forEach((file) => {
         if (!(file.includes('.DS_Store'))) {
           if (!(answers.get('hana') === false && file.substring(0, 3) === 'db/')) {
-            if (!(file === 'srv/library.js' && answers.get('SaaSAPI') === false && answers.get('routes') === false)) {
-              if (!((file.substring(0, 5) === 'helm/' || file.includes('/Dockerfile') || file === 'dotdockerignore' || file === 'Makefile') && answers.get('BTPRuntime') !== 'Kyma')) {
-                if (!((file.substring(0, 3) === 'db/' || file.includes('helm/_PROJECT_NAME_-db')) && answers.get('hana') === false)) {
-                  if (!((file.includes('role.yaml') || file.includes('binding-role.yaml')) && answers.get('routes') === false)) {
-                    if (!((file.includes('service-sm.yaml') || file.includes('binding-sm.yaml')) && answers.get('hana') === false)) {
-                      if (!((file.includes('service-dest.yaml') || file.includes('binding-dest.yaml')) && answers.get('apiDest') === false)) {
-                        if (!((file.includes('-redis.yaml') || file.includes('destinationrule.yaml')) && answers.get('externalSessionManagement') === false)) {
-                          if (!((file === 'mta.yaml' || file === 'xs-security.json') && answers.get('BTPRuntime') !== 'CF')) {
-                            const sOrigin = this.templatePath(file);
-                            let fileDest = file;
-                            fileDest = fileDest.replace('_PROJECT_NAME_', answers.get('projectName'));
-                            fileDest = fileDest.replace('dotgitignore', '.gitignore');
-                            fileDest = fileDest.replace('dotdockerignore', '.dockerignore');
-                            const sTarget = this.destinationPath(fileDest);
-                            this.fs.copyTpl(sOrigin, sTarget, answers.getAll());
+            if (!(answers.get('sqlite') === false && file.substring(0, 7) === 'sqlite/')) {
+              if (!(file === 'srv/library.js' && answers.get('SaaSAPI') === false && answers.get('routes') === false)) {
+                if (!((file.substring(0, 5) === 'helm/' || file.includes('/Dockerfile') || file === 'dotdockerignore' || file === 'Makefile') && answers.get('BTPRuntime') !== 'Kyma')) {
+                  if (!((file.includes('helm/_PROJECT_NAME_-app/templates/apirule')) && answers.get('providerSubdomain') === "unknown")) {
+                    if (!((file.substring(0, 3) === 'db/' || file.includes('helm/_PROJECT_NAME_-db')) && answers.get('hana') === false)) {
+                      if (!((file.substring(0, 7) === 'sqlite/' || file.includes('helm/_PROJECT_NAME_-sqlite')) && answers.get('sqlite') === false)) {
+                        if (!((file.includes('role.yaml') || file.includes('binding-role.yaml')) && answers.get('routes') === false)) {
+                          if (!((file.includes('service-sm.yaml') || file.includes('binding-sm.yaml')) && answers.get('hana') === false)) {
+                            if (!((file.includes('service-dest.yaml') || file.includes('binding-dest.yaml')) && answers.get('apiDest') === false)) {
+                              if (!((file.includes('-redis.yaml') || file.includes('destinationrule.yaml')) && answers.get('externalSessionManagement') === false)) {
+                                if (!((file === 'mta.yaml' || file === 'xs-security.json') && answers.get('BTPRuntime') !== 'CF')) {
+                                  const sOrigin = this.templatePath(file);
+                                  let fileDest = file;
+                                  fileDest = fileDest.replace('_PROJECT_NAME_', answers.get('projectName'));
+                                  fileDest = fileDest.replace('dotgitignore', '.gitignore');
+                                  fileDest = fileDest.replace('dotdockerignore', '.dockerignore');
+                                  const sTarget = this.destinationPath(fileDest);
+                                  this.fs.copyTpl(sOrigin, sTarget, answers.getAll());
+                                }
+                              }
+                            }
                           }
                         }
                       }

@@ -18,6 +18,10 @@
 <% if(apiDest){ -%>
     <a href="/srv/destinations?destination=<%= projectName %>-nw">Destinations</a><br>
 <% } -%>
+<% if(sqlite){ -%>
+    <a href="/sqlite/noauth">SQLite NoAuth</a><br>
+    <a href="/sqlite/info">SQLite Info</a><br>
+<% } -%>
 </body>
 
 </html>
