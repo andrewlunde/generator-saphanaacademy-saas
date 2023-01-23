@@ -1,7 +1,7 @@
 FROM node:16-slim
 WORKDIR /srv
 COPY srv .
-RUN npm install --only=production
+RUN npm install --only=production --target_platform=linux --target_libc=glibc --target_arch=x64 
 <% if(hana){ -%>
 RUN apt-get update
 RUN apt-get install -y openssl python make g++
