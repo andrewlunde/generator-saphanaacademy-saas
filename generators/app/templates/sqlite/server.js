@@ -1,17 +1,18 @@
 const express = require('express');
 const app = express();
+var server = require("http").createServer();
 
 const xsenv = require('@sap/xsenv');
 xsenv.loadEnv();
 const services = xsenv.getServices({
-    uaa: { label: 'xsuaa' },
-    registry: { label: 'saas-registry' }
+    // registry: { label: 'saas-registry' },
 <% if(hana){ -%>
     , sm: { label: 'service-manager' }
 <% } -%>
 <% if(apiDest){ -%>
     , dest: { label: 'destination' }
 <% } -%>
+    uaa: { label: 'xsuaa' }
 });
 
 <% if (apiDest) {-%>
@@ -65,7 +66,7 @@ app.get("/favicon.ico", function(req, res) {
 });
 
 // app user info
-app.get(['/','/noauth','/sqlite/noauth'], function (req, res) {
+app.get(['/noauth','/sqlite/noauth'], function (req, res) {
     var hostname = "localhost";
 
     if (((typeof req) == "object") && ((typeof req.headers) == "object") && ((typeof req.headers['x-forwarded-host']) == "string")) {
@@ -78,6 +79,23 @@ app.get(['/','/noauth','/sqlite/noauth'], function (req, res) {
     res.status(200).json(info);
 });
 
+app.get(["/","/links"], function (req, res) {
+    console.log("served from adm.js");
+    
+    console.log(req.headers['x-forwarded-host']);
+
+    var responseStr = "";
+    responseStr += "<!DOCTYPE HTML><html><head><title>Crypto Rates ADM</title></head><body><h3>Crypto Rates ADM</h3><br />";
+    responseStr += "<a href=\"/sqlite/links\">SQLite Links</a> requires authorization.<br />";
+    responseStr += "<a href=\"/sqlite/noauth\">SQLite NoAuth</a> no authorization.<br />";
+    responseStr += "<a href=\"/noauth\">NoAuth</a> no authorization.<br />";
+    responseStr += "<br />";
+    responseStr += "<a href=\"/\">Return to SQLite Root.</a><br />";
+    responseStr += "</body></html>";
+    res.status(200).send(responseStr);
+});
+
+// Require authorization for anything further
 app.get("*", PassportAuthenticateMiddleware, function (req, res, next) {
 
     var hostname = "localhost";
@@ -184,7 +202,14 @@ app.get('/sqlite/info', PassportAuthenticateMiddleware, function (req, res) {
 // });
 <% } -%>
 
+//Setup Routes
+var router = require("./router")(app, server);
+
 const port = process.env.PORT || 5003;
-app.listen(port, function () {
+// app.listen(port, function () {
+//     console.info('Listening on http://localhost:' + port);
+// });
+server.on("request", app);
+server.listen(port, function () {
     console.info('Listening on http://localhost:' + port);
 });

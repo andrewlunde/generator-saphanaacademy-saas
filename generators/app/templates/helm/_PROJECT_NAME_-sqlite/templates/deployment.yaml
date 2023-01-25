@@ -15,6 +15,10 @@ spec:
       labels:
         app: {{ .Values.services.sqlite.name }}
     spec:
+<% if(sqlite){ -%>
+      securityContext:
+        fsGroup: 1000
+<% } -%>
       containers:
         - image: "{{ .Values.dockerID }}/{{ .Values.services.sqlite.image.repository }}:{{ .Values.services.sqlite.image.tag }}"
           name: {{ .Values.services.sqlite.name }}
@@ -56,6 +60,10 @@ spec:
               mountPath: "/bindings/<%= projectName %>-dest"
               readOnly: true
 <% } -%>
+<% if(sqlite){ -%>
+            - name: <%= projectName %>-service-db
+              mountPath: "/app/data"
+<% } -%>
 <% if(dockerRepositoryVisibility === 'private'){ -%>
       imagePullSecrets:
         - name: {{ .Values.services.sqlite.image.imagePullSecretName }}
@@ -76,4 +84,9 @@ spec:
         - name: <%= projectName %>-dest
           secret:
             secretName: {{ .Values.services.dest.bindingSecretName }}
+<% } -%>
+<% if(sqlite){ -%>
+        - name: <%= projectName %>-service-db
+          persistentVolumeClaim:
+            claimName: <%= projectName %>-service-data
 <% } -%>

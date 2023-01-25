@@ -42,6 +42,7 @@ module.exports = class extends Generator {
     answers.description = "Business Application";
     answers.category = "SaaS Multitenant Apps";
     answers.providerSubdomain = "Found-in-Subaccount-Overview";
+    answers.providerRegion = "us10";
     answers.BTPRuntime = "CF";
     answers.namespace = "default";
     answers.dockerID = "";
@@ -306,6 +307,7 @@ module.exports = class extends Generator {
     //this.log(this.options.subdomain);
     if (this.options.subdomain) {  // passing --subdomain=cryptorates on the command line
       answers.providerSubdomain = this.options.subdomain;
+      answers.providerRegion = "us10";  // ToDo : See if this can be determined dynamically or at least pass it in
     } else {
       answers.providerSubdomain = "unknown";
     }

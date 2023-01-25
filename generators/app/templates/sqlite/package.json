@@ -31,6 +31,6 @@
         "nunjucks": "latest"
     },
     "scripts": {
-        "start": "node server.js"
+        "start": "nodemon -e js,njk server.js"
     }
 }

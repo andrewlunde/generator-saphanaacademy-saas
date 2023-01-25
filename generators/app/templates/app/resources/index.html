@@ -21,7 +21,12 @@
 <% if(sqlite){ -%>
     <a href="/sqlite/noauth">SQLite NoAuth</a><br>
     <a href="/sqlite/info">SQLite Info</a><br>
+    <a href="/sqlite/links">SQLite Links</a><br>
 <% } -%>
+<% if(providerSubdomain !== "unknown"){ -%>
+    <a href="https://<%= providerSubdomain %>.authentication.<%= providerRegion %>.hana.ondemand.com/config?action=who">Check <%= providerSubdomain %> authorities</a><br>
+<% } -%>
+
 </body>
 
 </html>
